@@ -2,6 +2,7 @@ import { createRouter, createWebHistory } from 'vue-router';
 import Home from '@/pages/home/Home.vue';
 import About from '@/pages/about/About.vue';
 import NotFound from '@/pages/404/Error404.vue';
+import MenuNotFound from '@/pages/404/MenuNotFound.vue';
 import Login from '@/pages/login/Login.vue';
 import MainLayout from '@/layout/MainLayout.vue';
 import Dashboard from '@/views/Dashboard.vue';
@@ -45,7 +46,19 @@ const routes = [
                         component: PermissionManagement,
                         meta: { title: '权限管理' },
                     },
+                    // 捕获 system 路径下的未匹配子路由
+                    {
+                        path: ':pathMatch(.*)*',
+                        component: MenuNotFound,
+                        meta: { title: '页面未找到' },
+                    },
                 ],
+            },
+            // 在布局内显示404页面，捕获所有未匹配的子路由
+            {
+                path: ':pathMatch(.*)*',
+                component: MenuNotFound,
+                meta: { title: '页面未找到' },
             },
         ],
     },
@@ -60,6 +73,7 @@ const routes = [
         component: About,
         meta: { title: 'About' },
     },
+    // 全局404，只处理完全不匹配的路径
     { path: '/:path(.*)', component: NotFound },
 ];
 

@@ -94,6 +94,7 @@ import {
     KeyOutlined
 } from '@ant-design/icons-vue';
 import { logout, getCurrentUser } from '@/api/user.js';
+import { getMenuTree } from '@/api/menu.js';
 
 const router = useRouter();
 const route = useRoute();
@@ -102,42 +103,55 @@ const collapsed = ref(false);
 const selectedKeys = ref([]);
 const openKeys = ref(['system']);
 const currentUser = reactive({ username: '' });
+const userMenus = ref([]);
 
-// 菜单配置
-const menuItems = [
-    {
-        key: 'dashboard',
-        icon: h(DashboardOutlined),
-        label: '首页',
-        title: '首页'
-    },
-    {
-        key: 'system',
-        icon: h(SettingOutlined),
-        label: '系统管理',
-        title: '系统管理',
-        children: [
-            {
-                key: 'user-management',
-                icon: h(TeamOutlined),
-                label: '用户管理',
-                title: '用户管理'
-            },
-            {
-                key: 'role-management',
-                icon: h(SafetyOutlined),
-                label: '角色管理',
-                title: '角色管理'
-            },
-            {
-                key: 'permission-management',
-                icon: h(KeyOutlined),
-                label: '权限管理',
-                title: '权限管理'
+// 图标映射
+const iconMap = {
+    'DashboardOutlined': DashboardOutlined,
+    'TeamOutlined': TeamOutlined,
+    'SafetyOutlined': SafetyOutlined,
+    'KeyOutlined': KeyOutlined,
+    'SettingOutlined': SettingOutlined,
+    'UserOutlined': UserOutlined
+};
+
+// 获取图标组件
+const getMenuIcon = (iconName) => {
+    const IconComponent = iconMap[iconName];
+    return IconComponent ? h(IconComponent) : h(SettingOutlined);
+};
+
+// 转换菜单数据格式
+const transformMenuData = (menus) => {
+    return menus.map(menu => {
+        // 只处理MENU类型的菜单项，跳过OPERATE类型
+        if (menu.menuType !== 'MENU') {
+            return null;
+        }
+        
+        const item = {
+            key: menu.menuUrl || menu.menuId,
+            icon: getMenuIcon(menu.menuIcon),
+            label: menu.menuName,
+            title: menu.menuName
+        };
+        
+        if (menu.children && menu.children.length > 0) {
+            // 递归处理子菜单，过滤掉null值
+            const childItems = transformMenuData(menu.children).filter(child => child !== null);
+            if (childItems.length > 0) {
+                item.children = childItems;
             }
-        ]
-    }
-];
+        }
+        
+        return item;
+    }).filter(item => item !== null); // 过滤掉null值
+};
+
+// 菜单配置（动态获取）
+const menuItems = computed(() => {
+    return transformMenuData(userMenus.value);
+});
 
 // 面包屑导航
 const breadcrumbItems = computed(() => {
@@ -160,7 +174,7 @@ const breadcrumbItems = computed(() => {
 
 // 查找菜单项
 const findMenuByKey = (key) => {
-    for (const item of menuItems) {
+    for (const item of userMenus.value) {
         if (item.key === key) return item;
         if (item.children) {
             for (const child of item.children) {
@@ -173,7 +187,7 @@ const findMenuByKey = (key) => {
 
 // 查找父菜单
 const findParentMenu = (key) => {
-    for (const item of menuItems) {
+    for (const item of userMenus.value) {
         if (item.children) {
             for (const child of item.children) {
                 if (child.key === key) return item;
@@ -183,19 +197,70 @@ const findParentMenu = (key) => {
     return null;
 };
 
+// 在原始菜单数据中查找菜单项
+const findRawMenuByKey = (menus, key) => {
+    for (const menu of menus) {
+        if ((menu.menuUrl || menu.menuId) === key) {
+            return menu;
+        }
+        if (menu.children && menu.children.length > 0) {
+            const found = findRawMenuByKey(menu.children, key);
+            if (found) return found;
+        }
+    }
+    return null;
+};
+
+// 在原始菜单数据中查找父菜单
+const findRawParentMenu = (menus, key) => {
+    for (const menu of menus) {
+        if (menu.children && menu.children.length > 0) {
+            for (const child of menu.children) {
+                if ((child.menuUrl || child.menuId) === key) {
+                    return menu;
+                }
+            }
+            // 递归查找更深层的父菜单
+            const found = findRawParentMenu(menu.children, key);
+            if (found) return found;
+        }
+    }
+    return null;
+};
+
+// 构建完整的菜单路径（包含父菜单路径）
+const buildMenuPath = (key) => {
+    const menuItem = findRawMenuByKey(userMenus.value, key);
+    if (!menuItem) return key.startsWith('/') ? key : `/${key}`;
+    
+    // 查找父菜单
+    const parentMenu = findRawParentMenu(userMenus.value, key);
+    if (parentMenu && parentMenu.menuUrl) {
+        // 如果有父菜单，拼接父菜单路径
+        const parentPath = parentMenu.menuUrl.startsWith('/') ? parentMenu.menuUrl : `/${parentMenu.menuUrl}`;
+        const childPath = menuItem.menuUrl || key;
+        const childPathClean = childPath.startsWith('/') ? childPath.substring(1) : childPath;
+        return `${parentPath}/${childPathClean}`;
+    } else {
+        // 如果没有父菜单，直接使用菜单项的路径
+        return menuItem.menuUrl ? 
+            (menuItem.menuUrl.startsWith('/') ? menuItem.menuUrl : `/${menuItem.menuUrl}`) : 
+            (key.startsWith('/') ? key : `/${key}`);
+    }
+};
+
 // 菜单点击处理
 const handleMenuClick = ({ key }) => {
     selectedKeys.value = [key];
     
-    // 路由映射
-    const routeMap = {
-        'dashboard': '/dashboard',
-        'user-management': '/system/user',
-        'role-management': '/system/role',
-        'permission-management': '/system/permission'
-    };
+    // 动态构建路由路径
+    let targetRoute = '';
+    if (key === 'dashboard') {
+        targetRoute = '/dashboard';
+    } else {
+        targetRoute = buildMenuPath(key);
+    }
     
-    const targetRoute = routeMap[key];
     if (targetRoute && route.path !== targetRoute) {
         router.push(targetRoute);
     }
@@ -216,39 +281,73 @@ const handleLogout = async () => {
     }
 };
 
-// 获取当前用户信息
+// 获取当前用户信息和菜单
 const fetchCurrentUser = async () => {
     try {
-        const user = await getCurrentUser();
-        Object.assign(currentUser, user);
+        const response = await getCurrentUser();
+        // 处理用户信息
+        Object.assign(currentUser, response.data);
+        // 处理菜单数据
+        if (response.data && response.data.menus) {
+            userMenus.value = response.data.menus;
+        } else {
+            // 如果没有菜单数据，使用默认菜单
+            userMenus.value = [
+                {
+                    menuId: 'dashboard',
+                    menuName: '首页',
+                    menuUrl: 'dashboard',
+                    menuIcon: 'DashboardOutlined'
+                }
+            ];
+        }
     } catch (error) {
         console.error('获取用户信息失败:', error);
+        // 如果获取失败，使用默认菜单
+        userMenus.value = [
+            {
+                menuId: 'dashboard',
+                menuName: '首页',
+                menuUrl: 'dashboard',
+                menuIcon: 'DashboardOutlined'
+            }
+        ];
     }
 };
 
 // 根据当前路由设置选中的菜单
 const setSelectedMenuByRoute = () => {
     const path = route.path;
-    const routeMenuMap = {
-        '/dashboard': 'dashboard',
-        '/system/user': 'user-management',
-        '/system/role': 'role-management',
-        '/system/permission': 'permission-management'
+    
+    // 递归查找匹配的菜单项
+    const findMenuByPath = (menus, targetPath) => {
+        for (const menu of menus) {
+            if (menu.menuType === 'MENU') {
+                const menuPath = menu.menuUrl === 'dashboard' ? '/dashboard' : `/system/${menu.menuUrl}`;
+                if (menuPath === targetPath) {
+                    return menu.menuUrl;
+                }
+                if (menu.children) {
+                    const found = findMenuByPath(menu.children, targetPath);
+                    if (found) {
+                        // 如果在子菜单中找到，确保父菜单展开
+                        openKeys.value = [menu.menuUrl];
+                        return found;
+                    }
+                }
+            }
+        }
+        return null;
     };
     
-    const menuKey = routeMenuMap[path];
+    const menuKey = findMenuByPath(userMenus.value, path);
     if (menuKey) {
         selectedKeys.value = [menuKey];
-        
-        // 如果是系统管理下的子菜单，确保父菜单展开
-        if (menuKey.includes('management')) {
-            openKeys.value = ['system'];
-        }
     }
 };
 
-onMounted(() => {
-    fetchCurrentUser();
+onMounted(async () => {
+    await fetchCurrentUser();
     setSelectedMenuByRoute();
 });
 
@@ -295,20 +394,40 @@ router.afterEach(() => {
     justify-content: space-between;
     box-shadow: 0 1px 4px rgba(0, 21, 41, 0.08);
     margin-left: 240px;
+    transition: margin-left 0.2s;
     
     .header-left {
         display: flex;
         align-items: center;
         
         .trigger {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 48px;
+            height: 48px;
+            margin-right: 16px;
+            border-radius: 6px;
             font-size: 18px;
-            line-height: 64px;
-            padding: 0 24px;
             cursor: pointer;
-            transition: color 0.3s;
+            transition: all 0.3s;
+            background: transparent;
+            border: none;
             
             &:hover {
                 color: #1890ff;
+                background: rgba(24, 144, 255, 0.1);
+            }
+            
+            &:active {
+                background: rgba(24, 144, 255, 0.15);
+            }
+            
+            // 确保图标居中对齐
+            :deep(.anticon) {
+                display: flex;
+                align-items: center;
+                justify-content: center;
             }
         }
         
@@ -337,6 +456,7 @@ router.afterEach(() => {
     padding: 24px;
     background: #f0f2f5;
     min-height: calc(100vh - 64px);
+    transition: margin-left 0.2s;
     
     .content-wrapper {
         background: white;
@@ -344,6 +464,14 @@ router.afterEach(() => {
         border-radius: 8px;
         box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
         min-height: calc(100vh - 112px);
+    }
+}
+
+// 侧边栏折叠时的样式调整
+.main-layout :deep(.ant-layout-sider-collapsed) + .ant-layout {
+    .header,
+    .content {
+        margin-left: 80px;
     }
 }
 
@@ -361,6 +489,14 @@ router.afterEach(() => {
     .header,
     .content {
         margin-left: 0;
+    }
+    
+    // 移动端不需要折叠样式调整
+    .main-layout :deep(.ant-layout-sider-collapsed) + .ant-layout {
+        .header,
+        .content {
+            margin-left: 0;
+        }
     }
 }
 </style>

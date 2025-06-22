@@ -86,11 +86,7 @@
             <ACard title="快捷操作" class="action-card">
                 <ARow :gutter="[16, 16]">
                     <ACol :xs="24" :sm="12" :md="8">
-                        <ACard 
-                            hoverable 
-                            class="action-item"
-                            @click="() => $router.push('/system/user')"
-                        >
+                        <ACard hoverable class="action-item" @click="() => router.push('/system/user')">
                             <div class="action-content">
                                 <TeamOutlined class="action-icon" />
                                 <div class="action-text">
@@ -101,11 +97,7 @@
                         </ACard>
                     </ACol>
                     <ACol :xs="24" :sm="12" :md="8">
-                        <ACard 
-                            hoverable 
-                            class="action-item"
-                            @click="() => $router.push('/system/role')"
-                        >
+                        <ACard hoverable class="action-item" @click="() => router.push('/system/role')">
                             <div class="action-content">
                                 <SafetyOutlined class="action-icon" />
                                 <div class="action-text">
@@ -116,11 +108,7 @@
                         </ACard>
                     </ACol>
                     <ACol :xs="24" :sm="12" :md="8">
-                        <ACard 
-                            hoverable 
-                            class="action-item"
-                            @click="() => $router.push('/system/permission')"
-                        >
+                        <ACard hoverable class="action-item" @click="() => router.push('/system/permission')">
                             <div class="action-content">
                                 <KeyOutlined class="action-icon" />
                                 <div class="action-text">
@@ -258,8 +246,8 @@ const currentDate = computed(() => {
 // 获取当前用户信息
 const fetchCurrentUser = async () => {
     try {
-        const response = await getCurrentUser();
-        Object.assign(currentUser, response.data);
+        const user = await getCurrentUser();
+        Object.assign(currentUser, user);
     } catch (error) {
         console.error('获取用户信息失败:', error);
     }

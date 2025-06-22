@@ -118,27 +118,15 @@
                     <AInput v-model:value="roleForm.roleName" placeholder="请输入角色名称" />
                 </AFormItem>
                 
-                <AFormItem label="角色ID" name="roleId">
+                <AFormItem v-if="isEdit" label="角色ID" name="roleId">
                     <AInput 
                         v-model:value="roleForm.roleId" 
-                        placeholder="请输入角色ID"
-                        :disabled="isEdit"
+                        placeholder="角色ID"
+                        disabled
                     />
                 </AFormItem>
                 
-                <AFormItem label="创建用户ID" name="roleUserId">
-                    <AInput 
-                        v-model:value="roleForm.roleUserId" 
-                        placeholder="请输入创建用户ID"
-                    />
-                </AFormItem>
-                
-                <AFormItem label="创建用户名" name="roleUserName">
-                    <AInput 
-                        v-model:value="roleForm.roleUserName" 
-                        placeholder="请输入创建用户名"
-                    />
-                </AFormItem>
+
             </AForm>
         </AModal>
 
@@ -229,13 +217,7 @@ const columns = [
         key: 'roleId',
         width: 150
     },
-    {
-        title: '创建用户',
-        dataIndex: 'roleUserName',
-        key: 'roleUserName',
-        width: 120,
-        customRender: ({ text }) => text || '未知用户'
-    },
+
     {
         title: '创建时间',
         dataIndex: 'inserttime',
@@ -262,9 +244,7 @@ const isEdit = ref(false);
 const roleFormRef = ref();
 const roleForm = reactive({
     roleId: null,
-    roleName: '',
-    roleUserId: '',
-    roleUserName: ''
+    roleName: ''
 });
 
 // 表单验证规则
@@ -272,6 +252,9 @@ const roleFormRules = {
     roleName: [
         { required: true, message: '请输入角色名称', trigger: 'blur' },
         { min: 2, max: 50, message: '角色名称长度为2-50个字符', trigger: 'blur' }
+    ],
+    roleId: [
+        { required: true, message: '角色ID不能为空', trigger: 'blur' }
     ]
 };
 
@@ -391,9 +374,7 @@ const handleRoleCancel = () => {
 const resetRoleForm = () => {
     Object.assign(roleForm, {
         roleId: null,
-        roleName: '',
-        roleUserId: '',
-        roleUserName: ''
+        roleName: ''
     });
     roleFormRef.value?.resetFields();
 };

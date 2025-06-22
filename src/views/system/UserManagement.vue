@@ -29,17 +29,7 @@
                         style="width: 200px"
                     />
                 </AFormItem>
-                <AFormItem label="用户类型">
-                    <ASelect
-                        v-model:value="searchForm.userType"
-                        placeholder="请选择用户类型"
-                        allow-clear
-                        style="width: 120px"
-                    >
-                        <ASelectOption value="OTHER">普通用户</ASelectOption>
-                        <ASelectOption value="ADMIN">管理员</ASelectOption>
-                    </ASelect>
-                </AFormItem>
+
                 <AFormItem label="部门">
                     <AInput
                         v-model:value="searchForm.userDepartment"
@@ -119,48 +109,36 @@
                                 type="link" 
                                 size="small" 
                                 @click="handleEdit(record)"
+                                title="编辑"
                             >
                                 <EditOutlined />
-                                编辑
                             </AButton>
-                            <AButton 
-                                type="link" 
-                                size="small" 
-                                @click="handleAssignRole(record)"
-                            >
-                                <TeamOutlined />
-                                分配角色
-                            </AButton>
-                            <AButton 
-                                type="link" 
-                                size="small" 
-                                @click="handleResetPassword(record)"
-                            >
-                                <KeyOutlined />
-                                重置密码
-                            </AButton>
-                            <APopconfirm
-                                title="确定要删除这个用户吗？"
-                                @confirm="handleDelete(record)"
-                            >
-                                <AButton 
-                                    type="link" 
-                                    size="small" 
-                                    danger
-                                >
-                                    <DeleteOutlined />
-                                    删除
+                            <ADropdown>
+                                <AButton type="link" size="small" title="更多操作">
+                                    <MoreOutlined />
                                 </AButton>
-                            </APopconfirm>
+                                <template #overlay>
+                                    <AMenu>
+                                        <AMenuItem @click="handleAssignRole(record)">
+                                            <TeamOutlined />
+                                            分配角色
+                                        </AMenuItem>
+                                        <AMenuItem @click="handleResetPassword(record)">
+                                            <KeyOutlined />
+                                            重置密码
+                                        </AMenuItem>
+                                        <AMenuDivider />
+                                        <AMenuItem @click="confirmDelete(record)" class="danger-item">
+                                            <DeleteOutlined />
+                                            删除
+                                        </AMenuItem>
+                                    </AMenu>
+                                </template>
+                            </ADropdown>
                         </ASpace>
                     </template>
                     
-                    <!-- 用户类型显示逻辑 -->
-                    <template v-else-if="column.key === 'userType'">
-                        <ATag :color="record.userType === 'ADMIN' ? 'red' : record.userType === 'USER' ? 'blue' : 'default'">
-                            {{ record.userType === 'ADMIN' ? '管理员' : record.userType === 'USER' ? '普通用户' : '其他' }}
-                        </ATag>
-                    </template>
+
                 </template>
             </ATable>
         </ACard>
@@ -200,12 +178,7 @@
                     <AInput v-model:value="userForm.userRealName" placeholder="请输入真实姓名" />
                 </AFormItem>
                 
-                <AFormItem label="用户类型" name="userType">
-                    <ASelect v-model:value="userForm.userType" placeholder="请选择用户类型">
-                        <ASelectOption value="OTHER">普通用户</ASelectOption>
-                        <ASelectOption value="ADMIN">管理员</ASelectOption>
-                    </ASelect>
-                </AFormItem>
+
                 
                 <AFormItem label="部门" name="userDepartment">
                     <AInput v-model:value="userForm.userDepartment" placeholder="请输入部门" />
@@ -256,7 +229,8 @@ import {
     DeleteOutlined,
     EditOutlined,
     TeamOutlined,
-    KeyOutlined
+    KeyOutlined,
+    MoreOutlined
 } from '@ant-design/icons-vue';
 import {
     getUserList,
@@ -274,7 +248,6 @@ import { getRoleList } from '@/api/role.js';
 const searchForm = reactive({
     userName: '',
     userRealName: '',
-    userType: undefined,
     userDepartment: ''
 });
 
@@ -325,13 +298,7 @@ const columns = [
         key: 'userMobile',
         width: 130
     },
-    {
-        title: '用户类型',
-        dataIndex: 'userType',
-        key: 'userType',
-        width: 100,
-        align: 'center'
-    },
+
     {
         title: '部门',
         dataIndex: 'userDepartment',
@@ -353,7 +320,7 @@ const columns = [
     {
         title: '操作',
         key: 'action',
-        width: 280,
+        width: 120,
         fixed: 'right'
     }
 ];
@@ -402,9 +369,7 @@ const userFormRules = {
     userRealName: [
         { required: true, message: '请输入真实姓名', trigger: 'blur' }
     ],
-    userType: [
-        { required: true, message: '请选择用户类型', trigger: 'change' }
-    ]
+
 };
 
 // 角色相关
@@ -443,7 +408,6 @@ const handleReset = () => {
     Object.assign(searchForm, {
         userName: '',
         userRealName: '',
-        userType: undefined,
         userDepartment: ''
     });
     pagination.current = 1;
@@ -468,7 +432,16 @@ const handleAdd = () => {
 const handleEdit = (record) => {
     isEdit.value = true;
     userModalVisible.value = true;
-    Object.assign(userForm, record);
+    Object.assign(userForm, { ...record, userType: 'OTHER' });
+};
+
+// 删除用户确认
+const confirmDelete = (record) => {
+    Modal.confirm({
+        title: '确定要删除这个用户吗？',
+        content: `用户：${record.userName}`,
+        onOk: () => handleDelete(record)
+    });
 };
 
 // 删除用户
@@ -645,6 +618,17 @@ onMounted(() => {
             .ant-table-thead > tr > th {
                 background: #fafafa;
                 font-weight: 600;
+            }
+        }
+        
+        // 操作按钮样式优化
+        :deep(.ant-dropdown-menu) {
+            .danger-item {
+                color: #ff4d4f;
+                
+                &:hover {
+                    background-color: #fff2f0;
+                }
             }
         }
     }
