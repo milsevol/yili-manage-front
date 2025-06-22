@@ -2,11 +2,56 @@ import { createRouter, createWebHistory } from 'vue-router';
 import Home from '@/pages/home/Home.vue';
 import About from '@/pages/about/About.vue';
 import NotFound from '@/pages/404/Error404.vue';
+import Login from '@/pages/login/Login.vue';
+import MainLayout from '@/layout/MainLayout.vue';
+import Dashboard from '@/views/Dashboard.vue';
+import UserManagement from '@/views/system/UserManagement.vue';
+import RoleManagement from '@/views/system/RoleManagement.vue';
+import PermissionManagement from '@/views/system/PermissionManagement.vue';
 
 const routes = [
     {
+        path: '/login',
+        component: Login,
+        meta: { title: '登录', requiresAuth: false },
+    },
+    {
         path: '/',
-        alias: '/home',
+        component: MainLayout,
+        redirect: '/dashboard',
+        meta: { requiresAuth: true },
+        children: [
+            {
+                path: 'dashboard',
+                component: Dashboard,
+                meta: { title: '首页' },
+            },
+            {
+                path: 'system',
+                meta: { title: '系统管理' },
+                children: [
+                    {
+                        path: 'user',
+                        component: UserManagement,
+                        meta: { title: '用户管理' },
+                    },
+                    {
+                        path: 'role',
+                        component: RoleManagement,
+                        meta: { title: '角色管理' },
+                    },
+                    {
+                        path: 'permission',
+                        component: PermissionManagement,
+                        meta: { title: '权限管理' },
+                    },
+                ],
+            },
+        ],
+    },
+    // 兼容旧路由
+    {
+        path: '/home',
         component: Home,
         meta: { title: 'Home' },
     },
@@ -14,12 +59,8 @@ const routes = [
         path: '/About',
         component: About,
         meta: { title: 'About' },
-        // example of route level code-splitting
-        // this generates a separate chunk (About.[hash].js) for this route
-        // which is lazy-loaded when the route is visited.
     },
     { path: '/:path(.*)', component: NotFound },
-
 ];
 
 const router = createRouter({
@@ -29,7 +70,24 @@ const router = createRouter({
 
 // 路由全局前置守卫
 router.beforeEach((to, from, next) => {
-    next();
+    // 设置页面标题
+    if (to.meta.title) {
+        document.title = `${to.meta.title} - 管理后台`;
+    }
+    
+    // 检查是否需要登录验证
+    const requiresAuth = to.matched.some(record => record.meta.requiresAuth !== false);
+    const token = localStorage.getItem('token');
+    
+    if (requiresAuth && !token) {
+        // 需要登录但没有token，跳转到登录页
+        next('/login');
+    } else if (to.path === '/login' && token) {
+        // 已登录用户访问登录页，跳转到首页
+        next('/dashboard');
+    } else {
+        next();
+    }
 });
 
 

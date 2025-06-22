@@ -18,12 +18,10 @@ export default defineConfig({
     server: {
         port: 9000,
         proxy: {
-            '/foo': 'http://localhost:4567/foo',
             '/api': {
-                target: 'http://jsonplaceholder.typicode.com',
+                target: 'http://127.0.0.1:29502/yili-manage',
                 changeOrigin: true,
-                // 如果 JSONPlaceholder 的接口不包含 /api 前缀，就取消注释下面这行
-                // rewrite: (path) => path.replace(/^\/api/, ''),
+                rewrite: (path) => path.replace(/^\/api/, ''),
             },
         },
     },
