@@ -1,7 +1,7 @@
 <template>
     <div class="btn-container">
         <p>展示 home 添加的计数器结果: {{ counter.count }}</p>
-        <AButton class="big-block-narrow" @click="toHome">toHome</AButton>
+        <a-button class="big-block-narrow" @click="toHome">toHome</a-button>
     </div>
 </template>
 

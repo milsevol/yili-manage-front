@@ -7,58 +7,58 @@
         </div>
 
         <!-- 搜索和操作区域 -->
-        <ACard class="search-card">
-            <AForm
+        <a-card class="search-card">
+            <a-form
                 :model="searchForm"
                 layout="inline"
                 class="search-form"
             >
-                <AFormItem label="用户名">
-                    <AInput
+                <a-form-item label="用户名">
+                    <a-input
                         v-model:value="searchForm.userName"
                         placeholder="请输入用户名"
                         allow-clear
                         style="width: 200px"
                     />
-                </AFormItem>
-                <AFormItem label="真实姓名">
-                    <AInput
+                </a-form-item>
+                <a-form-item label="真实姓名">
+                    <a-input
                         v-model:value="searchForm.userRealName"
                         placeholder="请输入真实姓名"
                         allow-clear
                         style="width: 200px"
                     />
-                </AFormItem>
+                </a-form-item>
 
-                <AFormItem label="部门">
-                    <AInput
+                <a-form-item label="部门">
+                    <a-input
                         v-model:value="searchForm.userDepartment"
                         placeholder="请输入部门"
                         allow-clear
                         style="width: 200px"
                     />
-                </AFormItem>
-                <AFormItem>
-                    <ASpace>
-                        <AButton type="primary" @click="handleSearch">
+                </a-form-item>
+                <a-form-item>
+                    <a-space>
+                        <a-button type="primary" @click="handleSearch">
                             <SearchOutlined />
                             搜索
-                        </AButton>
-                        <AButton @click="handleReset">
+                        </a-button>
+                        <a-button @click="handleReset">
                             <ReloadOutlined />
                             重置
-                        </AButton>
-                    </ASpace>
-                </AFormItem>
-            </AForm>
+                        </a-button>
+                    </a-space>
+                </a-form-item>
+            </a-form>
             
             <div class="action-buttons">
-                <ASpace>
-                    <AButton type="primary" @click="handleAdd">
+                <a-space>
+                    <a-button type="primary" @click="handleAdd">
                         <PlusOutlined />
                         新增用户
-                    </AButton>
-                    <AButton 
+                    </a-button>
+                    <a-button 
                         type="primary" 
                         danger 
                         :disabled="!selectedRowKeys.length"
@@ -66,14 +66,14 @@
                     >
                         <DeleteOutlined />
                         批量删除
-                    </AButton>
-                </ASpace>
+                    </a-button>
+                </a-space>
             </div>
-        </ACard>
+        </a-card>
 
         <!-- 用户列表 -->
-        <ACard class="table-card">
-            <ATable
+        <a-card class="table-card">
+            <a-table
                 :columns="columns"
                 :data-source="userList"
                 :loading="loading"
@@ -84,9 +84,15 @@
             >
                 <template #bodyCell="{ column, record }">
                     <template v-if="column.key === 'avatar'">
-                        <AAvatar :src="record.avatar" :size="40">
-                            {{ record.userName?.charAt(0)?.toUpperCase() }}
-                        </AAvatar>
+                        <a-avatar :src="record.avatar" :size="40">
+                            {{ record.userRealName?.charAt(0) || record.userName?.charAt(0) || 'U' }}
+                        </a-avatar>
+                    </template>
+                    
+                    <template v-else-if="column.key === 'userStatus'">
+                        <a-tag :color="record.userStatus === 'active' ? 'green' : 'red'">
+                            {{ record.userStatus === 'active' ? '启用' : '禁用' }}
+                        </a-tag>
                     </template>
                     
                     <template v-else-if="column.key === 'userDepartment'">
@@ -94,128 +100,128 @@
                     </template>
                     
                     <template v-else-if="column.key === 'roles'">
-                        <ATag
+                        <a-tag
                             v-for="role in record.roles"
                             :key="role.id"
                             color="blue"
                         >
                             {{ role.name }}
-                        </ATag>
+                        </a-tag>
                     </template>
                     
                     <template v-else-if="column.key === 'action'">
-                        <ASpace>
-                            <AButton 
+                        <a-space>
+                            <a-button 
                                 type="link" 
                                 size="small" 
                                 @click="handleEdit(record)"
                                 title="编辑"
                             >
                                 <EditOutlined />
-                            </AButton>
-                            <ADropdown>
-                                <AButton type="link" size="small" title="更多操作">
+                            </a-button>
+                            <a-dropdown>
+                                <a-button type="link" size="small" title="更多操作">
                                     <MoreOutlined />
-                                </AButton>
+                                </a-button>
                                 <template #overlay>
-                                    <AMenu>
-                                        <AMenuItem @click="handleAssignRole(record)">
+                                    <a-menu>
+                                        <a-menu-item @click="handleAssignRole(record)">
                                             <TeamOutlined />
                                             分配角色
-                                        </AMenuItem>
-                                        <AMenuItem @click="handleResetPassword(record)">
+                                        </a-menu-item>
+                                        <a-menu-item @click="handleResetPassword(record)">
                                             <KeyOutlined />
                                             重置密码
-                                        </AMenuItem>
-                                        <AMenuDivider />
-                                        <AMenuItem @click="confirmDelete(record)" class="danger-item">
+                                        </a-menu-item>
+                                        <a-menu-divider />
+                                        <a-menu-item @click="confirmDelete(record)" class="danger-item">
                                             <DeleteOutlined />
                                             删除
-                                        </AMenuItem>
-                                    </AMenu>
+                                        </a-menu-item>
+                                    </a-menu>
                                 </template>
-                            </ADropdown>
-                        </ASpace>
+                            </a-dropdown>
+                        </a-space>
                     </template>
                     
 
                 </template>
-            </ATable>
-        </ACard>
+            </a-table>
+        </a-card>
 
         <!-- 用户表单弹窗 -->
-        <AModal
+        <a-modal
             v-model:open="userModalVisible"
             :title="isEdit ? '编辑用户' : '新增用户'"
             width="600px"
             @ok="handleUserSubmit"
             @cancel="handleUserCancel"
         >
-            <AForm
+            <a-form
                 ref="userFormRef"
                 :model="userForm"
                 :rules="userFormRules"
                 :label-col="{ span: 6 }"
                 :wrapper-col="{ span: 18 }"
             >
-                <AFormItem label="用户名" name="userName">
-                    <AInput v-model:value="userForm.userName" placeholder="请输入用户名" />
-                </AFormItem>
+                <a-form-item label="用户名" name="userName">
+                    <a-input v-model:value="userForm.userName" placeholder="请输入用户名" />
+                </a-form-item>
                 
-                <AFormItem label="邮箱" name="userEmail">
-                    <AInput v-model:value="userForm.userEmail" placeholder="请输入邮箱" />
-                </AFormItem>
+                <a-form-item label="邮箱" name="userEmail">
+                    <a-input v-model:value="userForm.userEmail" placeholder="请输入邮箱" />
+                </a-form-item>
                 
-                <AFormItem label="手机号" name="userMobile">
-                    <AInput v-model:value="userForm.userMobile" placeholder="请输入手机号" />
-                </AFormItem>
+                <a-form-item label="手机号" name="userMobile">
+                    <a-input v-model:value="userForm.userMobile" placeholder="请输入手机号" />
+                </a-form-item>
                 
-                <AFormItem v-if="!isEdit" label="密码" name="userPwd">
-                    <AInputPassword v-model:value="userForm.userPwd" placeholder="请输入密码" />
-                </AFormItem>
+                <a-form-item v-if="!isEdit" label="密码" name="userPwd">
+                    <a-input-password v-model:value="userForm.userPwd" placeholder="请输入密码" />
+                </a-form-item>
                 
-                <AFormItem label="真实姓名" name="userRealName">
-                    <AInput v-model:value="userForm.userRealName" placeholder="请输入真实姓名" />
-                </AFormItem>
+                <a-form-item label="真实姓名" name="userRealName">
+                    <a-input v-model:value="userForm.userRealName" placeholder="请输入真实姓名" />
+                </a-form-item>
                 
 
                 
-                <AFormItem label="部门" name="userDepartment">
-                    <AInput v-model:value="userForm.userDepartment" placeholder="请输入部门" />
-                </AFormItem>
-            </AForm>
-        </AModal>
+                <a-form-item label="部门" name="userDepartment">
+                    <a-input v-model:value="userForm.userDepartment" placeholder="请输入部门" />
+                </a-form-item>
+            </a-form>
+        </a-modal>
 
         <!-- 分配角色弹窗 -->
-        <AModal
+        <a-modal
             v-model:open="roleModalVisible"
             title="分配角色"
             width="500px"
             @ok="handleRoleSubmit"
             @cancel="handleRoleCancel"
         >
-            <AForm :label-col="{ span: 6 }" :wrapper-col="{ span: 18 }">
-                <AFormItem label="用户">
-                    <AInput :value="currentUser?.userName" disabled />
-                </AFormItem>
-                <AFormItem label="角色">
-                    <ACheckboxGroup v-model:value="selectedRoles">
-                        <ARow>
-                            <ACol 
+            <a-form :label-col="{ span: 6 }" :wrapper-col="{ span: 18 }">
+                <a-form-item label="用户">
+                    <a-input :value="currentUser?.userName" disabled />
+                </a-form-item>
+                <a-form-item label="角色">
+                    <a-checkbox-group v-model:value="selectedRoles">
+                        <a-row>
+                            <a-col 
                                 v-for="role in roleList" 
                                 :key="role.roleId" 
                                 :span="12"
                                 style="margin-bottom: 8px"
                             >
-                                <ACheckbox :value="role.roleId">
+                                <a-checkbox :value="role.roleId">
                                     {{ role.roleName }}
-                                </ACheckbox>
-                            </ACol>
-                        </ARow>
-                    </ACheckboxGroup>
-                </AFormItem>
-            </AForm>
-        </AModal>
+                                </a-checkbox>
+                            </a-col>
+                        </a-row>
+                    </a-checkbox-group>
+                </a-form-item>
+            </a-form>
+        </a-modal>
     </div>
 </template>
 

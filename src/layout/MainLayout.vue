@@ -1,7 +1,7 @@
 <template>
-    <ALayout class="main-layout">
+    <a-layout class="main-layout">
         <!-- 侧边栏 -->
-        <ALayoutSider
+        <a-layout-sider
             v-model:collapsed="collapsed"
             :trigger="null"
             collapsible
@@ -12,7 +12,7 @@
                 <h3 v-if="!collapsed">管理后台</h3>
                 <h3 v-else>后台</h3>
             </div>
-            <AMenu
+            <a-menu
                 v-model:selectedKeys="selectedKeys"
                 v-model:openKeys="openKeys"
                 mode="inline"
@@ -20,61 +20,61 @@
                 :items="menuItems"
                 @click="handleMenuClick"
             />
-        </ALayoutSider>
+        </a-layout-sider>
         
         <!-- 主内容区 -->
-        <ALayout>
+        <a-layout>
             <!-- 顶部导航 -->
-            <ALayoutHeader class="header">
+            <a-layout-header class="header">
                 <div class="header-left">
-                    <AButton
+                    <a-button
                         type="text"
                         :icon="h(collapsed ? MenuUnfoldOutlined : MenuFoldOutlined)"
                         @click="() => (collapsed = !collapsed)"
                         class="trigger"
                     />
-                    <ABreadcrumb class="breadcrumb">
-                        <ABreadcrumbItem v-for="item in breadcrumbItems" :key="item.path">
+                    <a-breadcrumb class="breadcrumb">
+                        <a-breadcrumb-item v-for="item in breadcrumbItems" :key="item.path">
                             {{ item.title }}
-                        </ABreadcrumbItem>
-                    </ABreadcrumb>
+                        </a-breadcrumb-item>
+                    </a-breadcrumb>
                 </div>
                 <div class="header-right">
-                    <ADropdown>
-                        <AButton type="text" class="user-info">
+                    <a-dropdown>
+                        <a-button type="text" class="user-info">
                             <UserOutlined />
                             <span class="username">{{ currentUser.username || 'Admin' }}</span>
                             <DownOutlined />
-                        </AButton>
+                        </a-button>
                         <template #overlay>
-                            <AMenu>
-                                <AMenuItem key="profile">
+                            <a-menu>
+                                <a-menu-item key="profile">
                                     <UserOutlined />
                                     个人信息
-                                </AMenuItem>
-                                <AMenuItem key="settings">
+                                </a-menu-item>
+                                <a-menu-item key="settings">
                                     <SettingOutlined />
                                     系统设置
-                                </AMenuItem>
-                                <AMenuDivider />
-                                <AMenuItem key="logout" @click="handleLogout">
+                                </a-menu-item>
+                                <a-menu-divider />
+                                <a-menu-item key="logout" @click="handleLogout">
                                     <LogoutOutlined />
                                     退出登录
-                                </AMenuItem>
-                            </AMenu>
+                                </a-menu-item>
+                            </a-menu>
                         </template>
-                    </ADropdown>
+                    </a-dropdown>
                 </div>
-            </ALayoutHeader>
+            </a-layout-header>
             
             <!-- 内容区域 -->
-            <ALayoutContent class="content">
+            <a-layout-content class="content">
                 <div class="content-wrapper">
                     <router-view />
                 </div>
-            </ALayoutContent>
-        </ALayout>
-    </ALayout>
+            </a-layout-content>
+        </a-layout>
+    </a-layout>
 </template>
 
 <script setup>

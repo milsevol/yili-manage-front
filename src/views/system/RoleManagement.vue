@@ -7,166 +7,180 @@
         </div>
 
         <!-- 搜索和操作区域 -->
-        <ACard class="search-card">
-            <AForm
+        <a-card class="search-card">
+            <a-form
                 :model="searchForm"
                 layout="inline"
                 class="search-form"
             >
-                <AFormItem label="角色名称">
-                    <AInput
+                <a-form-item label="角色名称">
+                    <a-input
                         v-model:value="searchForm.roleName"
                         placeholder="请输入角色名称"
                         allow-clear
                         style="width: 200px"
                     />
-                </AFormItem>
-                <AFormItem label="角色ID">
-                    <AInput
-                        v-model:value="searchForm.roleId"
-                        placeholder="请输入角色ID"
+                </a-form-item>
+                <a-form-item label="角色编码">
+                    <a-input
+                        v-model:value="searchForm.roleCode"
+                        placeholder="请输入角色编码"
                         allow-clear
                         style="width: 200px"
                     />
-                </AFormItem>
-                <AFormItem>
-                    <ASpace>
-                        <AButton type="primary" @click="handleSearch">
+                </a-form-item>
+                <a-form-item>
+                    <a-space>
+                        <a-button type="primary" @click="handleSearch">
                             <SearchOutlined />
                             搜索
-                        </AButton>
-                        <AButton @click="handleReset">
+                        </a-button>
+                        <a-button @click="handleReset">
                             <ReloadOutlined />
                             重置
-                        </AButton>
-                    </ASpace>
-                </AFormItem>
-            </AForm>
+                        </a-button>
+                    </a-space>
+                </a-form-item>
+            </a-form>
             
             <div class="action-buttons">
-                <AButton type="primary" @click="handleAdd">
-                    <PlusOutlined />
-                    新增角色
-                </AButton>
+                <a-space>
+                    <a-button type="primary" @click="handleAdd">
+                        <PlusOutlined />
+                        新增角色
+                    </a-button>
+                    <a-button 
+                        type="primary" 
+                        danger 
+                        :disabled="!selectedRowKeys.length"
+                        @click="handleBatchDelete"
+                    >
+                        <DeleteOutlined />
+                        批量删除
+                    </a-button>
+                </a-space>
             </div>
-        </ACard>
+        </a-card>
 
         <!-- 角色列表 -->
-        <ACard class="table-card">
-            <ATable
+        <a-card class="table-card">
+            <a-table
                 :columns="columns"
                 :data-source="roleList"
                 :loading="loading"
                 :pagination="pagination"
+                :row-selection="rowSelection"
                 row-key="roleId"
                 @change="handleTableChange"
             >
                 <template #bodyCell="{ column, record }">
-                    <template v-if="column.key === 'action'">
-                        <ASpace>
-                            <AButton 
+                    <template v-if="column.key === 'status'">
+                        <a-tag :color="record.status === 'active' ? 'green' : 'red'">
+                            {{ record.status === 'active' ? '启用' : '禁用' }}
+                        </a-tag>
+                    </template>
+                    
+                    <template v-else-if="column.key === 'action'">
+                        <a-space>
+                            <a-button 
                                 type="link" 
                                 size="small" 
                                 @click="handleEdit(record)"
                             >
                                 <EditOutlined />
                                 编辑
-                            </AButton>
-                            <AButton 
+                            </a-button>
+                            <a-button 
                                 type="link" 
                                 size="small" 
-                                @click="handleViewPermissions(record)"
+                                @click="handlePermission(record)"
                             >
-                                <KeyOutlined />
-                                详情
-                            </AButton>
-                            <APopconfirm
-                                title="确定要删除这个角色吗？"
-                                @confirm="handleDelete(record)"
+                                <SettingOutlined />
+                                权限
+                            </a-button>
+                            <a-button 
+                                type="link" 
+                                size="small" 
+                                danger 
+                                @click="handleDelete(record)"
                             >
-                                <AButton 
-                                    type="link" 
-                                    size="small" 
-                                    danger
-                                >
-                                    <DeleteOutlined />
-                                    删除
-                                </AButton>
-                            </APopconfirm>
-                        </ASpace>
+                                <DeleteOutlined />
+                                删除
+                            </a-button>
+                        </a-space>
                     </template>
                 </template>
-            </ATable>
-        </ACard>
+            </a-table>
+        </a-card>
 
         <!-- 角色表单弹窗 -->
-        <AModal
+        <a-modal
             v-model:open="roleModalVisible"
             :title="isEdit ? '编辑角色' : '新增角色'"
             width="600px"
             @ok="handleRoleSubmit"
             @cancel="handleRoleCancel"
         >
-            <AForm
+            <a-form
                 ref="roleFormRef"
                 :model="roleForm"
                 :rules="roleFormRules"
                 :label-col="{ span: 6 }"
                 :wrapper-col="{ span: 18 }"
             >
-                <AFormItem label="角色名称" name="roleName">
-                    <AInput v-model:value="roleForm.roleName" placeholder="请输入角色名称" />
-                </AFormItem>
+                <a-form-item label="角色名称" name="roleName">
+                    <a-input v-model:value="roleForm.roleName" placeholder="请输入角色名称" />
+                </a-form-item>
                 
-                <AFormItem v-if="isEdit" label="角色ID" name="roleId">
-                    <AInput 
+                <a-form-item v-if="isEdit" label="角色ID" name="roleId">
+                    <a-input 
                         v-model:value="roleForm.roleId" 
                         placeholder="角色ID"
                         disabled
                     />
-                </AFormItem>
+                </a-form-item>
                 
 
-            </AForm>
-        </AModal>
+            </a-form>
+        </a-modal>
 
         <!-- 权限详情弹窗 -->
-        <AModal
+        <a-modal
             v-model:open="permissionModalVisible"
             title="权限详情"
             width="800px"
             :footer="null"
         >
             <div v-if="currentRole">
-                <ADescriptions :column="2" bordered>
-                    <ADescriptionsItem label="角色名称">
+                <a-descriptions :column="2" bordered>
+                    <a-descriptions-item label="角色名称">
                         {{ currentRole.roleName }}
-                    </ADescriptionsItem>
-                    <ADescriptionsItem label="角色ID">
+                    </a-descriptions-item>
+                    <a-descriptions-item label="角色ID">
                         {{ currentRole.roleId }}
-                    </ADescriptionsItem>
-                    <ADescriptionsItem label="创建用户">
+                    </a-descriptions-item>
+                    <a-descriptions-item label="创建用户">
                         {{ currentRole.roleUserName || '未知用户' }}
-                    </ADescriptionsItem>
-                    <ADescriptionsItem label="创建时间">
+                    </a-descriptions-item>
+                    <a-descriptions-item label="创建时间">
                         {{ currentRole.inserttime }}
-                    </ADescriptionsItem>
-                    <ADescriptionsItem label="更新时间" :span="2">
+                    </a-descriptions-item>
+                    <a-descriptions-item label="更新时间" :span="2">
                         {{ currentRole.updatetime }}
-                    </ADescriptionsItem>
-                </ADescriptions>
+                    </a-descriptions-item>
+                </a-descriptions>
                 
-                <ADivider>角色详情</ADivider>
+                <a-divider>角色详情</a-divider>
                 
-                <AEmpty description="角色详情已在上方显示" />
+                <a-empty description="角色详情已在上方显示" />
             </div>
-        </AModal>
+        </a-modal>
     </div>
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue';
-import { message } from 'ant-design-vue';
+import { ref, reactive, onMounted, computed } from 'vue';
+import { message, Modal } from 'ant-design-vue';
 import {
     SearchOutlined,
     ReloadOutlined,
@@ -262,6 +276,15 @@ const roleFormRules = {
 const permissionModalVisible = ref(false);
 const currentRole = ref(null);
 
+// 表格行选择
+const selectedRowKeys = ref([]);
+const rowSelection = computed(() => ({
+    selectedRowKeys: selectedRowKeys.value,
+    onChange: (keys) => {
+        selectedRowKeys.value = keys;
+    }
+}));
+
 // 获取角色列表
 const fetchRoleList = async () => {
     loading.value = true;
@@ -338,6 +361,29 @@ const handleViewPermissions = async (record) => {
     } catch (error) {
         message.error('获取角色详情失败');
     }
+};
+
+// 批量删除角色
+const handleBatchDelete = () => {
+    if (selectedRowKeys.value.length === 0) {
+        message.warning('请选择要删除的角色');
+        return;
+    }
+    
+    Modal.confirm({
+        title: '确认删除',
+        content: `将删除 ${selectedRowKeys.value.length} 个角色`,
+        onOk: async () => {
+            try {
+                await Promise.all(selectedRowKeys.value.map(roleId => deleteRole(roleId)));
+                message.success('批量删除成功');
+                selectedRowKeys.value = [];
+                fetchRoleList();
+            } catch (error) {
+                message.error('批量删除失败');
+            }
+        }
+    });
 };
 
 // 角色表单提交

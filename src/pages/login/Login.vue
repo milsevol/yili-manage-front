@@ -5,31 +5,31 @@
                 <h2>系统登录</h2>
                 <p>欢迎使用管理后台系统</p>
             </div>
-            <AForm
+            <a-form
                 :model="loginForm"
                 :rules="rules"
                 @finish="handleLogin"
                 @finish-failed="handleLoginFailed"
                 class="login-form"
             >
-                <AFormItem name="username">
-                    <AInput
+                <a-form-item name="username">
+                    <a-input
                         v-model:value="loginForm.username"
                         size="large"
                         placeholder="请输入用户名"
                         :prefix="h(UserOutlined)"
                     />
-                </AFormItem>
-                <AFormItem name="password">
-                    <AInputPassword
+                </a-form-item>
+                <a-form-item name="password">
+                    <a-input-password
                         v-model:value="loginForm.password"
                         size="large"
                         placeholder="请输入密码"
                         :prefix="h(LockOutlined)"
                     />
-                </AFormItem>
-                <AFormItem>
-                    <AButton
+                </a-form-item>
+                <a-form-item>
+                    <a-button
                         type="primary"
                         html-type="submit"
                         size="large"
@@ -37,9 +37,9 @@
                         class="login-btn"
                     >
                         登录
-                    </AButton>
-                </AFormItem>
-            </AForm>
+                    </a-button>
+                </a-form-item>
+            </a-form>
         </div>
     </div>
 </template>

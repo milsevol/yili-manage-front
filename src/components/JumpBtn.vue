@@ -1,6 +1,6 @@
 <template>
     <div>
-        <AButton @click="toAbout">跳转 about</AButton>
+        <a-button @click="toAbout">跳转 about</a-button>
     </div>
 </template>
 

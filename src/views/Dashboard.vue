@@ -2,7 +2,7 @@
     <div class="dashboard">
         <!-- 欢迎区域 -->
         <div class="welcome-section">
-            <ACard class="welcome-card">
+            <a-card class="welcome-card">
                 <div class="welcome-content">
                     <div class="welcome-text">
                         <h2>欢迎回来，{{ currentUser.username || 'Admin' }}！</h2>
@@ -12,15 +12,15 @@
                         <SmileOutlined class="icon" />
                     </div>
                 </div>
-            </ACard>
+            </a-card>
         </div>
 
         <!-- 统计卡片 -->
         <div class="stats-section">
-            <ARow :gutter="[16, 16]">
-                <ACol :xs="24" :sm="12" :md="6">
-                    <ACard class="stat-card">
-                        <AStat
+            <a-row :gutter="[16, 16]">
+                <a-col :xs="24" :sm="12" :md="6">
+                    <a-card class="stat-card">
+                        <a-statistic
                             title="用户总数"
                             :value="stats.userCount"
                             :precision="0"
@@ -30,12 +30,12 @@
                             <template #prefix>
                                 <TeamOutlined />
                             </template>
-                        </AStat>
-                    </ACard>
-                </ACol>
-                <ACol :xs="24" :sm="12" :md="6">
-                    <ACard class="stat-card">
-                        <AStat
+                        </a-statistic>
+                    </a-card>
+                </a-col>
+                <a-col :xs="24" :sm="12" :md="6">
+                    <a-card class="stat-card">
+                        <a-statistic
                             title="角色总数"
                             :value="stats.roleCount"
                             :precision="0"
@@ -45,12 +45,12 @@
                             <template #prefix>
                                 <SafetyOutlined />
                             </template>
-                        </AStat>
-                    </ACard>
-                </ACol>
-                <ACol :xs="24" :sm="12" :md="6">
-                    <ACard class="stat-card">
-                        <AStat
+                        </a-statistic>
+                    </a-card>
+                </a-col>
+                <a-col :xs="24" :sm="12" :md="6">
+                    <a-card class="stat-card">
+                        <a-statistic
                             title="权限总数"
                             :value="stats.permissionCount"
                             :precision="0"
@@ -60,12 +60,12 @@
                             <template #prefix>
                                 <KeyOutlined />
                             </template>
-                        </AStat>
-                    </ACard>
-                </ACol>
-                <ACol :xs="24" :sm="12" :md="6">
-                    <ACard class="stat-card">
-                        <AStat
+                        </a-statistic>
+                    </a-card>
+                </a-col>
+                <a-col :xs="24" :sm="12" :md="6">
+                    <a-card class="stat-card">
+                        <a-statistic
                             title="今日登录"
                             :value="stats.todayLoginCount"
                             :precision="0"
@@ -75,18 +75,18 @@
                             <template #prefix>
                                 <LoginOutlined />
                             </template>
-                        </AStat>
-                    </ACard>
-                </ACol>
-            </ARow>
+                        </a-statistic>
+                    </a-card>
+                </a-col>
+            </a-row>
         </div>
 
         <!-- 快捷操作 -->
         <div class="quick-actions">
-            <ACard title="快捷操作" class="action-card">
-                <ARow :gutter="[16, 16]">
-                    <ACol :xs="24" :sm="12" :md="8">
-                        <ACard hoverable class="action-item" @click="() => router.push('/system/user')">
+            <a-card title="快捷操作" class="action-card">
+                <a-row :gutter="[16, 16]">
+                    <a-col :xs="24" :sm="12" :md="8">
+                        <a-card hoverable class="action-item" @click="() => router.push('/system/user')">
                             <div class="action-content">
                                 <TeamOutlined class="action-icon" />
                                 <div class="action-text">
@@ -94,10 +94,10 @@
                                     <p>管理系统用户信息</p>
                                 </div>
                             </div>
-                        </ACard>
-                    </ACol>
-                    <ACol :xs="24" :sm="12" :md="8">
-                        <ACard hoverable class="action-item" @click="() => router.push('/system/role')">
+                        </a-card>
+                    </a-col>
+                    <a-col :xs="24" :sm="12" :md="8">
+                        <a-card hoverable class="action-item" @click="() => router.push('/system/role')">
                             <div class="action-content">
                                 <SafetyOutlined class="action-icon" />
                                 <div class="action-text">
@@ -105,10 +105,10 @@
                                     <p>配置用户角色权限</p>
                                 </div>
                             </div>
-                        </ACard>
-                    </ACol>
-                    <ACol :xs="24" :sm="12" :md="8">
-                        <ACard hoverable class="action-item" @click="() => router.push('/system/permission')">
+                        </a-card>
+                    </a-col>
+                    <a-col :xs="24" :sm="12" :md="8">
+                        <a-card hoverable class="action-item" @click="() => router.push('/system/permission')">
                             <div class="action-content">
                                 <KeyOutlined class="action-icon" />
                                 <div class="action-text">
@@ -116,59 +116,59 @@
                                     <p>设置系统访问权限</p>
                                 </div>
                             </div>
-                        </ACard>
-                    </ACol>
-                </ARow>
-            </ACard>
+                        </a-card>
+                    </a-col>
+                </a-row>
+            </a-card>
         </div>
 
         <!-- 系统信息 -->
         <div class="system-info">
-            <ARow :gutter="16">
-                <ACol :xs="24" :md="12">
-                    <ACard title="系统信息" class="info-card">
-                        <ADescriptions :column="1" size="small">
-                            <ADescriptionsItem label="系统版本">
+            <a-row :gutter="16">
+                <a-col :xs="24" :md="12">
+                    <a-card title="系统信息" class="info-card">
+                        <a-descriptions :column="1" size="small">
+                            <a-descriptions-item label="系统版本">
                                 v1.0.0
-                            </ADescriptionsItem>
-                            <ADescriptionsItem label="运行环境">
+                            </a-descriptions-item>
+                            <a-descriptions-item label="运行环境">
                                 {{ systemInfo.environment }}
-                            </ADescriptionsItem>
-                            <ADescriptionsItem label="数据库">
+                            </a-descriptions-item>
+                            <a-descriptions-item label="数据库">
                                 {{ systemInfo.database }}
-                            </ADescriptionsItem>
-                            <ADescriptionsItem label="服务器时间">
+                            </a-descriptions-item>
+                            <a-descriptions-item label="服务器时间">
                                 {{ systemInfo.serverTime }}
-                            </ADescriptionsItem>
-                        </ADescriptions>
-                    </ACard>
-                </ACol>
-                <ACol :xs="24" :md="12">
-                    <ACard title="最近活动" class="activity-card">
-                        <AList
+                            </a-descriptions-item>
+                        </a-descriptions>
+                    </a-card>
+                </a-col>
+                <a-col :xs="24" :md="12">
+                    <a-card title="最近活动" class="activity-card">
+                        <a-list
                             :data-source="recentActivities"
                             size="small"
                         >
                             <template #renderItem="{ item }">
-                                <AListItem>
-                                    <AListItemMeta
+                                <a-list-item>
+                                    <a-list-item-meta
                                         :description="item.time"
                                     >
                                         <template #title>
                                             {{ item.action }}
                                         </template>
                                         <template #avatar>
-                                            <AAvatar :style="{ backgroundColor: item.color }">
+                                            <a-avatar :style="{ backgroundColor: item.color }">
                                                 {{ item.user.charAt(0) }}
-                                            </AAvatar>
+                                            </a-avatar>
                                         </template>
-                                    </AListItemMeta>
-                                </AListItem>
+                                    </a-list-item-meta>
+                                </a-list-item>
                             </template>
-                        </AList>
-                    </ACard>
-                </ACol>
-            </ARow>
+                        </a-list>
+                    </a-card>
+                </a-col>
+            </a-row>
         </div>
     </div>
 </template>

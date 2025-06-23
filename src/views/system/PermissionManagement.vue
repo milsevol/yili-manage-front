@@ -7,71 +7,71 @@
         </div>
 
         <!-- 搜索和操作区域 -->
-        <ACard class="search-card">
-            <AForm
+        <a-card class="search-card">
+            <a-form
                 :model="searchForm"
                 layout="inline"
                 class="search-form"
             >
-                <AFormItem label="权限名称">
-                    <AInput
+                <a-form-item label="权限名称">
+                    <a-input
                         v-model:value="searchForm.name"
                         placeholder="请输入权限名称"
                         allow-clear
                         style="width: 200px"
                     />
-                </AFormItem>
-                <AFormItem label="权限编码">
-                    <AInput
+                </a-form-item>
+                <a-form-item label="权限编码">
+                    <a-input
                         v-model:value="searchForm.code"
                         placeholder="请输入权限编码"
                         allow-clear
                         style="width: 200px"
                     />
-                </AFormItem>
-                <AFormItem label="权限类型">
-                    <ASelect
+                </a-form-item>
+                <a-form-item label="权限类型">
+                    <a-select
                         v-model:value="searchForm.type"
                         placeholder="请选择权限类型"
                         allow-clear
                         style="width: 150px"
                     >
-                        <ASelectOption value="menu">菜单权限</ASelectOption>
-                        <ASelectOption value="button">按钮权限</ASelectOption>
-                        <ASelectOption value="api">接口权限</ASelectOption>
-                    </ASelect>
-                </AFormItem>
-                <AFormItem>
-                    <ASpace>
-                        <AButton type="primary" @click="handleSearch">
+                        <a-select-option value="menu">菜单权限</a-select-option>
+                        <a-select-option value="button">按钮权限</a-select-option>
+                        <a-select-option value="api">接口权限</a-select-option>
+                    </a-select>
+                </a-form-item>
+                <a-form-item>
+                    <a-space>
+                        <a-button type="primary" @click="handleSearch">
                             <SearchOutlined />
                             搜索
-                        </AButton>
-                        <AButton @click="handleReset">
+                        </a-button>
+                        <a-button @click="handleReset">
                             <ReloadOutlined />
                             重置
-                        </AButton>
-                    </ASpace>
-                </AFormItem>
-            </AForm>
+                        </a-button>
+                    </a-space>
+                </a-form-item>
+            </a-form>
             
             <div class="action-buttons">
-                <ASpace>
-                    <AButton type="primary" @click="handleAdd">
+                <a-space>
+                    <a-button type="primary" @click="handleAdd">
                         <PlusOutlined />
                         新增权限
-                    </AButton>
-                    <AButton @click="handleExpandAll">
+                    </a-button>
+                    <a-button @click="handleExpandAll">
                         <ApartmentOutlined />
-                        {{ expandedAll ? '收起全部' : '展开全部' }}
-                    </AButton>
-                </ASpace>
+                        展开全部
+                    </a-button>
+                </a-space>
             </div>
-        </ACard>
+        </a-card>
 
         <!-- 权限树形表格 -->
-        <ACard class="table-card">
-            <ATable
+        <a-card class="table-card">
+            <a-table
                 :columns="columns"
                 :data-source="permissionList"
                 :loading="loading"
@@ -92,28 +92,28 @@
                     </template>
                     
                     <template v-else-if="column.key === 'type'">
-                        <ATag :color="getTypeColor(record.type)">
+                        <a-tag :color="getTypeColor(record.type)">
                             {{ getTypeText(record.type) }}
-                        </ATag>
+                        </a-tag>
                     </template>
                     
                     <template v-else-if="column.key === 'status'">
-                        <ATag :color="record.status === 1 ? 'green' : 'red'">
+                        <a-tag :color="record.status === 1 ? 'green' : 'red'">
                             {{ record.status === 1 ? '启用' : '禁用' }}
-                        </ATag>
+                        </a-tag>
                     </template>
                     
                     <template v-else-if="column.key === 'action'">
-                        <ASpace>
-                            <AButton 
+                        <a-space>
+                            <a-button 
                                 type="link" 
                                 size="small" 
                                 @click="handleEdit(record)"
                             >
                                 <EditOutlined />
                                 编辑
-                            </AButton>
-                            <AButton 
+                            </a-button>
+                            <a-button 
                                 type="link" 
                                 size="small" 
                                 @click="handleAddChild(record)"
@@ -121,12 +121,12 @@
                             >
                                 <PlusOutlined />
                                 添加子权限
-                            </AButton>
-                            <APopconfirm
+                            </a-button>
+                            <a-popconfirm
                                 title="确定要删除这个权限吗？"
                                 @confirm="handleDelete(record)"
                             >
-                                <AButton 
+                                <a-button 
                                     type="link" 
                                     size="small" 
                                     danger
@@ -134,113 +134,115 @@
                                 >
                                     <DeleteOutlined />
                                     删除
-                                </AButton>
-                            </APopconfirm>
-                        </ASpace>
+                                </a-button>
+                            </a-popconfirm>
+                        </a-space>
                     </template>
                 </template>
-            </ATable>
-        </ACard>
+            </a-table>
+        </a-card>
 
         <!-- 权限表单弹窗 -->
-        <AModal
+        <a-modal
             v-model:open="permissionModalVisible"
-            :title="modalTitle"
+            :title="isEdit ? '编辑权限' : '新增权限'"
             width="600px"
             @ok="handlePermissionSubmit"
             @cancel="handlePermissionCancel"
         >
-            <AForm
+            <a-form
                 ref="permissionFormRef"
                 :model="permissionForm"
                 :rules="permissionFormRules"
                 :label-col="{ span: 6 }"
                 :wrapper-col="{ span: 18 }"
             >
-                <AFormItem label="上级权限" name="parentId" v-if="permissionForm.parentId">
-                    <ATreeSelect
+                <a-form-item label="上级权限" name="parentId" v-if="permissionForm.parentId">
+                    <a-tree-select
                         v-model:value="permissionForm.parentId"
-                        :tree-data="parentPermissionOptions"
+                        :tree-data="permissionTreeData"
                         placeholder="请选择上级权限"
                         tree-default-expand-all
-                        :disabled="isEdit"
+                        :field-names="{ children: 'children', label: 'name', value: 'id' }"
+                        disabled
                     />
-                </AFormItem>
+                </a-form-item>
                 
-                <AFormItem label="权限名称" name="name">
-                    <AInput v-model:value="permissionForm.name" placeholder="请输入权限名称" />
-                </AFormItem>
+                <a-form-item label="权限名称" name="name">
+                    <a-input v-model:value="permissionForm.name" placeholder="请输入权限名称" />
+                </a-form-item>
                 
-                <AFormItem label="权限编码" name="code">
-                    <AInput 
-                        v-model:value="permissionForm.code" 
+                <a-form-item label="权限编码" name="code">
+                    <a-input
+                        v-model:value="permissionForm.code"
                         placeholder="请输入权限编码"
                         :disabled="isEdit"
                     />
-                </AFormItem>
+                </a-form-item>
                 
-                <AFormItem label="权限类型" name="type">
-                    <ASelect 
-                        v-model:value="permissionForm.type" 
+                <a-form-item label="权限类型" name="type">
+                    <a-select
+                        v-model:value="permissionForm.type"
                         placeholder="请选择权限类型"
                         :disabled="isEdit"
                     >
-                        <ASelectOption value="menu">菜单权限</ASelectOption>
-                        <ASelectOption value="button">按钮权限</ASelectOption>
-                        <ASelectOption value="api">接口权限</ASelectOption>
-                    </ASelect>
-                </AFormItem>
+                        <a-select-option value="menu">菜单权限</a-select-option>
+                        <a-select-option value="button">按钮权限</a-select-option>
+                        <a-select-option value="api">接口权限</a-select-option>
+                    </a-select>
+                </a-form-item>
                 
-                <AFormItem label="路由路径" name="path" v-if="permissionForm.type === 'menu'">
-                    <AInput v-model:value="permissionForm.path" placeholder="请输入路由路径" />
-                </AFormItem>
+                <a-form-item label="路由路径" name="path" v-if="permissionForm.type === 'menu'">
+                    <a-input v-model:value="permissionForm.path" placeholder="请输入路由路径" />
+                </a-form-item>
                 
-                <AFormItem label="组件路径" name="component" v-if="permissionForm.type === 'menu'">
-                    <AInput v-model:value="permissionForm.component" placeholder="请输入组件路径" />
-                </AFormItem>
+                <a-form-item label="组件路径" name="component" v-if="permissionForm.type === 'menu'">
+                    <a-input v-model:value="permissionForm.component" placeholder="请输入组件路径" />
+                </a-form-item>
                 
-                <AFormItem label="图标" name="icon" v-if="permissionForm.type === 'menu'">
-                    <AInput v-model:value="permissionForm.icon" placeholder="请输入图标名称" />
-                </AFormItem>
+                <a-form-item label="图标" name="icon" v-if="permissionForm.type === 'menu'">
+                    <a-input v-model:value="permissionForm.icon" placeholder="请输入图标名称" />
+                </a-form-item>
                 
-                <AFormItem label="API路径" name="apiPath" v-if="permissionForm.type === 'api'">
-                    <AInput v-model:value="permissionForm.apiPath" placeholder="请输入API路径" />
-                </AFormItem>
+                <a-form-item label="API路径" name="apiPath" v-if="permissionForm.type === 'api'">
+                    <a-input v-model:value="permissionForm.apiPath" placeholder="请输入API路径" />
+                </a-form-item>
                 
-                <AFormItem label="HTTP方法" name="method" v-if="permissionForm.type === 'api'">
-                    <ASelect v-model:value="permissionForm.method" placeholder="请选择HTTP方法">
-                        <ASelectOption value="GET">GET</ASelectOption>
-                        <ASelectOption value="POST">POST</ASelectOption>
-                        <ASelectOption value="PUT">PUT</ASelectOption>
-                        <ASelectOption value="DELETE">DELETE</ASelectOption>
-                    </ASelect>
-                </AFormItem>
+                <a-form-item label="HTTP方法" name="method" v-if="permissionForm.type === 'api'">
+                    <a-select v-model:value="permissionForm.method" placeholder="请选择HTTP方法">
+                        <a-select-option value="GET">GET</a-select-option>
+                        <a-select-option value="POST">POST</a-select-option>
+                        <a-select-option value="PUT">PUT</a-select-option>
+                        <a-select-option value="DELETE">DELETE</a-select-option>
+                    </a-select>
+                </a-form-item>
                 
-                <AFormItem label="排序" name="sort">
-                    <AInputNumber 
-                        v-model:value="permissionForm.sort" 
-                        placeholder="请输入排序"
+                <a-form-item label="排序" name="sort">
+                    <a-input-number
+                        v-model:value="permissionForm.sort"
                         :min="0"
+                        :max="9999"
+                        placeholder="请输入排序值"
                         style="width: 100%"
                     />
-                </AFormItem>
+                </a-form-item>
                 
-                <AFormItem label="状态" name="status">
-                    <ARadioGroup v-model:value="permissionForm.status">
-                        <ARadio :value="1">启用</ARadio>
-                        <ARadio :value="0">禁用</ARadio>
-                    </ARadioGroup>
-                </AFormItem>
+                <a-form-item label="状态" name="status">
+                    <a-radio-group v-model:value="permissionForm.status">
+                        <a-radio :value="1">启用</a-radio>
+                        <a-radio :value="0">禁用</a-radio>
+                    </a-radio-group>
+                </a-form-item>
                 
-                <AFormItem label="描述" name="description">
-                    <ATextarea 
-                        v-model:value="permissionForm.description" 
+                <a-form-item label="描述" name="description">
+                    <a-textarea
+                        v-model:value="permissionForm.description"
                         placeholder="请输入权限描述"
                         :rows="3"
                     />
-                </AFormItem>
-            </AForm>
-        </AModal>
+                </a-form-item>
+            </a-form>
+        </a-modal>
     </div>
 </template>
 
