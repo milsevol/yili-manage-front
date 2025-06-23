@@ -8,7 +8,7 @@ import MainLayout from '@/layout/MainLayout.vue';
 import Dashboard from '@/views/Dashboard.vue';
 import UserManagement from '@/views/system/UserManagement.vue';
 import RoleManagement from '@/views/system/RoleManagement.vue';
-import PermissionManagement from '@/views/system/PermissionManagement.vue';
+import MenuManagement from '@/views/system/MenuManagement.vue';
 
 const routes = [
     {
@@ -42,9 +42,9 @@ const routes = [
                         meta: { title: '角色管理' },
                     },
                     {
-                        path: 'permission',
-                        component: PermissionManagement,
-                        meta: { title: '权限管理' },
+                        path: 'menus',
+                        component: MenuManagement,
+                        meta: { title: '菜单管理' },
                     },
                     // 捕获 system 路径下的未匹配子路由
                     {
