@@ -12,7 +12,7 @@
                 <a-space>
                     <a-button type="primary" @click="handleAddRootMenu">
                         <PlusOutlined />
-                        新增根菜单
+                        新增根菜单 
                     </a-button>
                     <a-button @click="handleExpandAll">
                         <ApartmentOutlined />
@@ -33,32 +33,23 @@
                 :expanded-keys="expandedKeys"
                 :selected-keys="selectedKeys"
                 show-icon
-                block-node
+                blockNode
                 @expand="onExpand"
                 @select="onSelect"
                 @right-click="onRightClick"
             >
                 <template #icon="{ dataRef }">
-                    <span :style="{ color: dataRef ? getNodeColor(dataRef) : '#1890ff' }">
-                        <component :is="iconMap[getNodeIcon(dataRef)]" />
-                    </span>
+                    <component :is="iconMap[getNodeIcon(dataRef)]" class="custom-tree-icon" />
                 </template>
                 <template #title="{ dataRef }">
                     <div class="tree-node-title" v-if="dataRef">
                         <span class="node-name">{{ dataRef.title || '未命名' }}</span>
                         <a-tag 
-                            :color="getTypeColor(dataRef.type || 'menu')" 
+                            :color="getTypeColor(dataRef.type || 'MENU')" 
                             size="small" 
                             class="node-type"
                         >
-                            {{ getTypeText(dataRef.type || 'menu') }}
-                        </a-tag>
-                        <a-tag 
-                            :color="(dataRef.status === 1 || dataRef.status === undefined) ? 'green' : 'red'" 
-                            size="small"
-                            class="node-status"
-                        >
-                            {{ (dataRef.status === 1 || dataRef.status === undefined) ? '启用' : '禁用' }}
+                            {{ getTypeText(dataRef.type || 'MENU') }}
                         </a-tag>
                     </div>
                 </template>
@@ -118,71 +109,43 @@
                 :label-col="{ span: 6 }"
                 :wrapper-col="{ span: 18 }"
             >
-                <a-form-item label="上级菜单" name="parentId" v-if="menuForm.parentId">
+                <a-form-item label="上级菜单" name="menuParentId" v-if="menuForm.menuParentId">
                     <a-input :value="getParentNodeName()" disabled />
                 </a-form-item>
                 
-                <a-form-item label="名称" name="name">
-                    <a-input v-model:value="menuForm.name" :placeholder="getNamePlaceholder()" />
+                <a-form-item label="名称" name="menuName">
+                    <a-input v-model:value="menuForm.menuName" :placeholder="getNamePlaceholder()" />
                 </a-form-item>
                 
-                <a-form-item label="编码" name="code">
-                    <a-input
-                        v-model:value="menuForm.code"
-                        :placeholder="getCodePlaceholder()"
-                        :disabled="isEdit"
-                    />
-                </a-form-item>
-                
-                <a-form-item label="类型" name="type">
+                <a-form-item label="类型" name="menuType">
                     <a-select
-                        v-model:value="menuForm.type"
+                        v-model:value="menuForm.menuType"
                         placeholder="请选择类型"
-                        :disabled="isEdit || typeDisabled"
+                        disabled
                     >
-                        <a-select-option value="menu" v-if="!isThirdLevel">菜单</a-select-option>
-                        <a-select-option value="permission" v-if="isThirdLevel">权限</a-select-option>
+                        <a-select-option value="menu">菜单</a-select-option>
+                        <a-select-option value="operate">操作</a-select-option>
                     </a-select>
+                    <div style="color: #999; font-size: 12px; margin-top: 4px;">
+                        类型根据节点层级自动设置：1、2级为菜单，3级为操作
+                    </div>
                 </a-form-item>
                 
-                <a-form-item label="路由路径" name="path" v-if="menuForm.type === 'menu'">
-                    <a-input v-model:value="menuForm.path" placeholder="请输入路由路径" />
+                <a-form-item label="路由路径" name="menuUrl" v-if="menuForm.menuType === 'menu'">
+                    <a-input v-model:value="menuForm.menuUrl" placeholder="请输入路由路径" />
                 </a-form-item>
                 
-                <a-form-item label="组件路径" name="component" v-if="menuForm.type === 'menu'">
-                    <a-input v-model:value="menuForm.component" placeholder="请输入组件路径" />
+                <a-form-item label="权限标识" name="menuOPERATEstrs" v-if="menuForm.menuType === 'operate'">
+                    <a-input v-model:value="menuForm.menuOPERATEstrs" placeholder="请输入权限标识，如：user:add" />
                 </a-form-item>
                 
-                <a-form-item label="图标" name="icon" v-if="menuForm.type === 'menu'">
-                    <a-input v-model:value="menuForm.icon" placeholder="请输入图标名称" />
-                </a-form-item>
-                
-                <a-form-item label="权限标识" name="permission" v-if="menuForm.type === 'permission'">
-                    <a-input v-model:value="menuForm.permission" placeholder="请输入权限标识，如：user:add" />
-                </a-form-item>
-                
-                <a-form-item label="排序" name="sort">
+                <a-form-item label="排序" name="menuOrdernum">
                     <a-input-number
-                        v-model:value="menuForm.sort"
+                        v-model:value="menuForm.menuOrdernum"
                         :min="0"
                         :max="9999"
                         placeholder="请输入排序值"
                         style="width: 100%"
-                    />
-                </a-form-item>
-                
-                <a-form-item label="状态" name="status">
-                    <a-radio-group v-model:value="menuForm.status">
-                        <a-radio :value="1">启用</a-radio>
-                        <a-radio :value="0">禁用</a-radio>
-                    </a-radio-group>
-                </a-form-item>
-                
-                <a-form-item label="描述" name="description">
-                    <a-textarea
-                        v-model:value="menuForm.description"
-                        :placeholder="getDescriptionPlaceholder()"
-                        :rows="3"
                     />
                 </a-form-item>
             </a-form>
@@ -210,9 +173,29 @@ import {
 const iconMap = {
     FolderOutlined,
     FileOutlined,
-    KeyOutlined
+    KeyOutlined,
+    PlusOutlined,
+    DeleteOutlined,
+    EditOutlined,
+    ApartmentOutlined,
+    MenuOutlined,
+    AppstoreOutlined,
+    ReloadOutlined
 };
-defineExpose({ iconMap });
+
+// 获取节点图标
+const getNodeIcon = (dataRef) => {
+    // 根据节点类型或其他属性返回对应的图标
+    if (dataRef.type === 'OPERATE') {
+        return 'KeyOutlined';
+    } else if (dataRef.children && dataRef.children.length > 0) {
+        return 'FolderOutlined';
+    } else {
+        return 'FileOutlined';
+    }
+};
+
+defineExpose({ iconMap, getNodeIcon });
 import { getMenuTree, createMenu, updateMenu, deleteMenu } from '@/api/menu.js';
 
 // 菜单树数据
@@ -236,7 +219,7 @@ const menuTreeData = computed(() => {
             return [];
         }
         return list.map(item => {
-            const nodeType = item.menuType === 'OPERATE' ? 'permission' : 'menu';
+            const nodeType = item.menuType === 'OPERATE' ? 'OPERATE' : 'MENU';
             const hasChildren = item.children && Array.isArray(item.children) && item.children.length > 0;
             
             const treeNode = {
@@ -245,7 +228,7 @@ const menuTreeData = computed(() => {
                 type: nodeType,
                 status: 1,
                 path: item.menuUrl || '',
-                permission: item.menuPermissionstrs || '',
+                OPERATE: item.menuOPERATEstrs || '',
                 sort: item.menuOrdernum || 0,
                 parentId: item.menuParentId,
                 level: item.menuLevel,
@@ -259,16 +242,6 @@ const menuTreeData = computed(() => {
             if (hasChildren) {
                 treeNode.children = buildTreeData(item.children);
             }
-            
-            // 关键修正：icon 赋值为字符串
-            if (nodeType === 'permission') {
-                treeNode.icon = 'KeyOutlined';
-            } else if (!hasChildren) {
-                treeNode.icon = 'FileOutlined';
-            } else {
-                treeNode.icon = 'FolderOutlined';
-            }
-            
             return treeNode;
         });
     };
@@ -293,118 +266,94 @@ const canDelete = computed(() => {
     return !selectedNode.value.children || selectedNode.value.children.length === 0;
 });
 
-const isThirdLevel = computed(() => {
-    if (!menuForm.parentId) return false;
-    const parentNode = findNodeById(menuTreeData.value, menuForm.parentId);
-    return parentNode ? getNodeLevel(parentNode) === 1 : false;
-});
-
-const typeDisabled = computed(() => {
-    return isThirdLevel.value || (menuForm.parentId && getNodeLevel(findNodeById(menuTreeData.value, menuForm.parentId)) > 0);
-});
-
 // 菜单表单
 const menuModalVisible = ref(false);
 const isEdit = ref(false);
 const menuFormRef = ref();
 const menuForm = reactive({
     id: null,
-    parentId: null,
-    name: '',
-    code: '',
-    type: 'menu',
-    path: '',
-    component: '',
-    icon: '',
-    permission: '',
-    sort: 0,
-    status: 1,
-    description: ''
+    menuParentId: null,
+    menuName: '',
+    menuType: 'MENU',
+    menuUrl: '',
+    menuOPERATEstrs: '',
+    menuOrdernum: 0
 });
 
 // 弹窗标题
 const modalTitle = computed(() => {
-    if (!menuForm.parentId) return '新增根菜单';
-    return isEdit.value ? '编辑' + getTypeText(menuForm.type) : '新增' + getTypeText(menuForm.type);
+    if (isEdit.value) return '编辑菜单';
+    if (!menuForm.menuParentId) return '添加根菜单';
+    return `添加${menuForm.menuType === 'OPERATE' ? '权限' : '菜单'}`;
 });
 
 // 表单验证规则
 const menuFormRules = {
-    name: [
+    menuName: [
         { required: true, message: '请输入名称', trigger: 'blur' },
         { min: 2, max: 50, message: '名称长度为2-50个字符', trigger: 'blur' }
     ],
-    code: [
-        { required: true, message: '请输入编码', trigger: 'blur' },
-        { pattern: /^[a-zA-Z][a-zA-Z0-9_:]*$/, message: '编码只能包含字母、数字、下划线和冒号，且以字母开头', trigger: 'blur' }
-    ],
-    type: [
+    menuType: [
         { required: true, message: '请选择类型', trigger: 'change' }
     ],
-    path: [
+    menuUrl: [
         { required: true, message: '请输入路由路径', trigger: 'blur', type: 'string' }
     ],
-    component: [
-        { required: true, message: '请输入组件路径', trigger: 'blur', type: 'string' }
-    ],
-    permission: [
+    menuOPERATEstrs: [
         { required: true, message: '请输入权限标识', trigger: 'blur', type: 'string' }
     ],
-    sort: [
+    menuOrdernum: [
         { required: true, message: '请输入排序', trigger: 'blur' },
         { type: 'number', min: 0, message: '排序必须大于等于0', trigger: 'blur' }
     ]
-};
-
-// 获取节点图标
-const getNodeIcon = (node) => {
-    if (!node) return 'FolderOutlined';
-    if (node.type === 'permission') return 'KeyOutlined';
-    if (!node.children || (Array.isArray(node.children) && node.children.length === 0)) return 'FileOutlined';
-    return 'FolderOutlined';
-};
-
-// 获取节点颜色
-const getNodeColor = (node) => {
-    if (node.type === 'permission') return '#722ed1';
-    return node.children ? '#1890ff' : '#52c41a';
 };
 
 // 获取类型颜色
 const getTypeColor = (type) => {
     const colorMap = {
         menu: 'blue',
-        permission: 'purple'
+        operate: 'purple'
     };
     return colorMap[type] || 'default';
 };
 
 // 获取类型文本
 const getTypeText = (type) => {
+    console.log('获取类型文本，类型:', type);
     const textMap = {
-        menu: '菜单',
-        permission: '权限'
+        MENU: '菜单',
+        OPERATE: '操作'
     };
     return textMap[type] || '未知类型';
 };
 
 // 获取父节点名称
 const getParentNodeName = () => {
-    if (!menuForm.parentId) return '';
-    const parentNode = findNodeById(menuTreeData.value, menuForm.parentId);
-    return parentNode ? parentNode.title : '';
+    if (!menuForm.menuParentId) return '无';
+    const node = findNodeById(menuTreeData.value, menuForm.menuParentId);
+    return node ? node.title : '无';
 };
 
-// 获取占位符文本
-const getNamePlaceholder = () => `请输入${getTypeText(menuForm.type)}名称`;
-const getCodePlaceholder = () => `请输入${getTypeText(menuForm.type)}编码`;
-const getDescriptionPlaceholder = () => `请输入${getTypeText(menuForm.type)}描述`;
+// 获取名称占位符
+const getNamePlaceholder = () => {
+    if (menuForm.menuType === 'MENU') return '请输入菜单名称';
+    if (menuForm.menuType === 'OPERATE') return '请输入权限名称';
+    return '请输入名称';
+};
 
 // 获取添加菜单文本
 const getAddMenuText = () => {
-    if (!selectedNode.value) return '新增根菜单';
+    if (!selectedNode.value) return '添加根菜单';
+    
+    // 根据选中节点的层级决定添加的是菜单还是操作
     const level = getNodeLevel(selectedNode.value);
-    return level === 1 ? '添加权限' : '添加子菜单';
+    if (level === 0 || level === 1) {
+        return '添加菜单';
+    } else if (level === 2) {
+        return '添加操作';
+    }
+    
+    return '添加菜单';
 };
 
 // 获取节点层级
@@ -536,14 +485,29 @@ const handleAddRootMenu = () => {
 
 // 新增菜单
 const handleAdd = () => {
+    resetMenuForm();
     isEdit.value = false;
     menuModalVisible.value = true;
-    resetMenuForm();
     
     if (selectedNode.value) {
-        menuForm.parentId = selectedNode.value.key;
-        menuForm.type = getNodeLevel(selectedNode.value) === 1 ? 'permission' : 'menu';
+        const node = selectedNode.value;
+        const level = getNodeLevel(node);
+        
+        menuForm.menuParentId = node.key;
+        
+        // 根据层级自动设置类型：1、2级为菜单，3级为操作
+        if (level === 0 ) {
+            menuForm.menuType = 'MENU';
+        } else if (level === 1) {
+            menuForm.menuType = 'OPERATE';
+        }
+    } else {
+        // 添加根菜单
+        menuForm.menuParentId = null;
+        menuForm.menuType = 'MENU';
     }
+    
+    console.log('添加菜单表单数据:', menuForm);
 };
 
 // 编辑菜单
@@ -554,20 +518,22 @@ const handleEdit = () => {
     menuModalVisible.value = true;
     
     const node = selectedNode.value;
+    const level = getNodeLevel(node);
+    
+    // 根据层级自动设置类型：1、2级为菜单，3级为操作
+    const menuType = level >= 2 ? 'OPERATE' : 'MENU';
+    
     Object.assign(menuForm, {
         id: node.key,
-        parentId: node.parentId,
-        name: node.title,
-        code: node.code,
-        type: node.type,
-        path: node.path,
-        component: node.component,
-        icon: node.icon,
-        permission: node.permission,
-        sort: node.sort,
-        status: node.status,
-        description: node.description
+        menuParentId: node.parentId,
+        menuName: node.title,
+        menuType: menuType, // 使用根据层级计算的类型，而不是节点原有的类型
+        menuUrl: node.path,
+        menuOPERATEstrs: node.OPERATE,
+        menuOrdernum: node.sort
     });
+    
+    console.log('编辑菜单表单数据:', menuForm);
 };
 
 // 删除菜单
@@ -590,17 +556,35 @@ const handleMenuSubmit = async () => {
     try {
         await menuFormRef.value.validate();
         
+        // 准备API数据
+        const apiData = {
+            id: menuForm.id,
+            menuParentId: menuForm.menuParentId,
+            menuName: menuForm.menuName,
+            menuType: menuForm.menuType.toUpperCase(), // 转为大写以匹配后端枚举
+            menuUrl: menuForm.menuUrl,
+            menuOPERATEstrs: menuForm.menuOPERATEstrs,
+            menuOrdernum: menuForm.menuOrdernum,
+            menuLevel: menuForm.menuParentId ? (findNodeById(menuTreeData.value, menuForm.menuParentId)?.level + 1 || 1) : 0
+        };
+        
+        // 移除id字段，因为创建时不需要
+        if (!isEdit.value) {
+            delete apiData.id;
+        }
+        
         if (isEdit.value) {
-            await updateMenu(menuForm.id, menuForm);
+            await updateMenu(menuForm.id, apiData);
             message.success('更新成功');
         } else {
-            await createMenu(menuForm);
+            await createMenu(apiData);
             message.success('创建成功');
         }
         
         menuModalVisible.value = false;
         fetchMenuList();
     } catch (error) {
+        console.error('提交失败:', error);
         if (error.errorFields) {
             message.error('请检查表单输入');
         } else {
@@ -619,19 +603,16 @@ const handleMenuCancel = () => {
 const resetMenuForm = () => {
     Object.assign(menuForm, {
         id: null,
-        parentId: null,
-        name: '',
-        code: '',
-        type: 'menu',
-        path: '',
-        component: '',
-        icon: '',
-        permission: '',
-        sort: 0,
-        status: 1,
-        description: ''
+        menuParentId: null,
+        menuName: '',
+        menuType: 'MENU',
+        menuUrl: '',
+        menuOPERATEstrs: '',
+        menuOrdernum: 0
     });
     menuFormRef.value?.resetFields();
+    
+    console.log('重置菜单表单');
 };
 
 onMounted(() => {
@@ -676,17 +657,25 @@ onMounted(() => {
                 transition: all 0.3s;
                 
                 &:hover {
-                    background-color: #f5f5f5;
+                    background-color: #f0f7ff;
                 }
                 
                 &.ant-tree-node-selected {
-                    background-color: #e6f7ff;
-                    border-color: #91d5ff;
+                    background-color: #e6f4ff;
+                    border-color: #69b1ff;
                 }
             }
             
             .ant-tree-iconEle {
                 margin-right: 8px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+            
+            .custom-tree-icon {
+                font-size: 16px;
+                color: #1890ff;
             }
             
             .ant-tree-title {
