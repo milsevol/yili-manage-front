@@ -32,27 +32,11 @@
                 :tree-data="menuTreeData"
                 :expanded-keys="expandedKeys"
                 :selected-keys="selectedKeys"
-                show-icon
-                blockNode
+                show-line
                 @expand="onExpand"
                 @select="onSelect"
                 @right-click="onRightClick"
             >
-                <template #icon="{ dataRef }">
-                    <component :is="iconMap[getNodeIcon(dataRef)]" class="custom-tree-icon" />
-                </template>
-                <template #title="{ dataRef }">
-                    <div class="tree-node-title" v-if="dataRef">
-                        <span class="node-name">{{ dataRef.title || '未命名' }}</span>
-                        <a-tag 
-                            :color="getTypeColor(dataRef.type || 'MENU')" 
-                            size="small" 
-                            class="node-type"
-                        >
-                            {{ getTypeText(dataRef.type || 'MENU') }}
-                        </a-tag>
-                    </div>
-                </template>
             </a-tree>
             <div v-if="menuTreeData.length === 0" style="text-align: center; padding: 20px; color: #999;">
                 暂无菜单数据
@@ -306,25 +290,6 @@ const menuFormRules = {
         { required: true, message: '请输入排序', trigger: 'blur' },
         { type: 'number', min: 0, message: '排序必须大于等于0', trigger: 'blur' }
     ]
-};
-
-// 获取类型颜色
-const getTypeColor = (type) => {
-    const colorMap = {
-        menu: 'blue',
-        operate: 'purple'
-    };
-    return colorMap[type] || 'default';
-};
-
-// 获取类型文本
-const getTypeText = (type) => {
-    console.log('获取类型文本，类型:', type);
-    const textMap = {
-        MENU: '菜单',
-        OPERATE: '操作'
-    };
-    return textMap[type] || '未知类型';
 };
 
 // 获取父节点名称
@@ -647,63 +612,7 @@ onMounted(() => {
         }
     }
     
-    .tree-card {
-        min-height: 400px;
-        
-        :deep(.ant-tree) {
-            .ant-tree-node-content-wrapper {
-                padding: 8px 12px;
-                border-radius: 6px;
-                transition: all 0.3s;
-                
-                &:hover {
-                    background-color: #f0f7ff;
-                }
-                
-                &.ant-tree-node-selected {
-                    background-color: #e6f4ff;
-                    border-color: #69b1ff;
-                }
-            }
-            
-            .ant-tree-iconEle {
-                margin-right: 8px;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-            }
-            
-            .custom-tree-icon {
-                font-size: 16px;
-                color: #1890ff;
-            }
-            
-            .ant-tree-title {
-                width: 100%;
-            }
-        }
-        
-        .tree-node-title {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            width: 100%;
-            
-            .node-name {
-                flex: 1;
-                font-weight: 500;
-                color: #262626;
-            }
-            
-            .node-type {
-                margin-left: 8px;
-            }
-            
-            .node-status {
-                margin-left: 4px;
-            }
-        }
-    }
+  
 }
 
 // 响应式处理
