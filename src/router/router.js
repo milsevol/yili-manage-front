@@ -73,8 +73,8 @@ const routes = [
         component: About,
         meta: { title: 'About' },
     },
-    // 全局404，只处理完全不匹配的路径
-    { path: '/:path(.*)', component: NotFound },
+    // // 全局404，只处理完全不匹配的路径
+    // { path: '/:path(.*)', component: NotFound },
 ];
 
 const router = createRouter({

@@ -18,7 +18,7 @@
                         v-model:value="searchForm.userName"
                         placeholder="请输入用户名"
                         allow-clear
-                        style="width: 200px"
+                        class="form-compo"
                     />
                 </a-form-item>
                 <a-form-item label="真实姓名">
@@ -26,7 +26,7 @@
                         v-model:value="searchForm.userRealName"
                         placeholder="请输入真实姓名"
                         allow-clear
-                        style="width: 200px"
+                        class="form-compo"
                     />
                 </a-form-item>
 
@@ -35,7 +35,7 @@
                         v-model:value="searchForm.userDepartment"
                         placeholder="请输入部门"
                         allow-clear
-                        style="width: 200px"
+                        class="form-compo"
                     />
                 </a-form-item>
                 <a-form-item>
@@ -164,8 +164,11 @@
                 :label-col="{ span: 6 }"
                 :wrapper-col="{ span: 18 }"
             >
-                <a-form-item label="用户名" name="userName">
+                <a-form-item v-if="!isEdit" label="用户名" name="userName">
                     <a-input v-model:value="userForm.userName" placeholder="请输入用户名" />
+                </a-form-item>
+                <a-form-item v-else label="用户名" name="userName">
+                    <span>{{ userForm.userName }}</span>
                 </a-form-item>
                 
                 <a-form-item label="邮箱" name="userEmail">
@@ -196,29 +199,49 @@
         <a-modal
             v-model:open="roleModalVisible"
             title="分配角色"
-            width="500px"
+            width="600px"
             @ok="handleRoleSubmit"
             @cancel="handleRoleCancel"
+            class="role-assignment-modal"
         >
-            <a-form :label-col="{ span: 6 }" :wrapper-col="{ span: 18 }">
+            <a-form :label-col="{ span: 4 }" :wrapper-col="{ span: 20 }">
                 <a-form-item label="用户">
-                    <a-input :value="currentUser?.userName" disabled />
+                    <a-input 
+                        :value="currentUser?.userName" 
+                        disabled 
+                        class="user-input"
+                    >
+                        <template #prefix>
+                            <UserOutlined />
+                        </template>
+                    </a-input>
                 </a-form-item>
-                <a-form-item label="角色">
-                    <a-checkbox-group v-model:value="selectedRoles">
-                        <a-row>
-                            <a-col 
-                                v-for="role in roleList" 
-                                :key="role.roleId" 
-                                :span="12"
-                                style="margin-bottom: 8px"
-                            >
-                                <a-checkbox :value="role.roleId">
-                                    {{ role.roleName }}
-                                </a-checkbox>
-                            </a-col>
-                        </a-row>
-                    </a-checkbox-group>
+                <a-form-item label="角色" class="roles-form-item">
+                    <div class="roles-container">
+                        <a-checkbox-group v-model:value="selectedRoles" class="role-checkbox-group">
+                            <a-row :gutter="[16, 16]">
+                                <a-col 
+                                    v-for="role in roleList" 
+                                    :key="role.roleId" 
+                                    :xs="24"
+                                    :sm="12"
+                                    :md="8"
+                                >
+                                    <div 
+                                        class="role-card" 
+                                        :class="{ 'role-card-selected': selectedRoles.includes(role.roleId) }"
+                                    >
+                                        <a-checkbox :value="role.roleId">
+                                            <div class="role-info">
+                                                <span class="role-name">{{ role.roleName }}</span>
+                                                <span class="role-desc" v-if="role.roleDesc">{{ role.roleDesc }}</span>
+                                            </div>
+                                        </a-checkbox>
+                                    </div>
+                                </a-col>
+                            </a-row>
+                        </a-checkbox-group>
+                    </div>
                 </a-form-item>
             </a-form>
         </a-modal>
@@ -236,7 +259,8 @@ import {
     EditOutlined,
     TeamOutlined,
     KeyOutlined,
-    MoreOutlined
+    MoreOutlined,
+    UserOutlined
 } from '@ant-design/icons-vue';
 import {
     getUserList,
@@ -498,13 +522,25 @@ const handleResetPassword = (record) => {
 // 分配角色
 const handleAssignRole = async (record) => {
     currentUser.value = record;
-    roleModalVisible.value = true;
+    selectedRoles.value = [];
+    loading.value = true;
     
     try {
-        const userRoles = await getUserRoles(record.userId);
-        selectedRoles.value = userRoles.map(role => role.roleId);
+        // 先获取所有角色列表
+        await fetchRoleList();
+        
+        // 再获取用户当前角色
+        const userRolesResponse = await getUserRoles(record.userId);
+        
+        // 设置用户已有的角色
+        selectedRoles.value = userRolesResponse.data.map(role => role.roleId);
+        
+        // 显示弹窗
+        roleModalVisible.value = true;
     } catch (error) {
-        message.error('获取用户角色失败');
+        message.error('获取角色信息失败');
+    } finally {
+        loading.value = false;
     }
 };
 
@@ -541,7 +577,7 @@ const handleUserCancel = () => {
 // 角色分配提交
 const handleRoleSubmit = async () => {
     try {
-        await assignUserRoles(currentUser.value.userId, selectedRoles.value);
+        await assignUserRoles(currentUser.value.userId, { roleIds: selectedRoles.value });
         message.success('角色分配成功');
         roleModalVisible.value = false;
         fetchUserList();
@@ -575,7 +611,11 @@ const resetUserForm = () => {
 // 获取角色列表
 const fetchRoleList = async () => {
     try {
-        const response = await getRoleList();
+        const params = {
+            pageNum: 1,
+            pageSize: 100 // 获取足够多的角色
+        };
+        const response = await getRoleList(params);
         roleList.value = response.data.list || [];
     } catch (error) {
         message.error('获取角色列表失败');
@@ -639,7 +679,6 @@ onMounted(() => {
         }
     }
 }
-
 // 响应式处理
 @media (max-width: 768px) {
     .user-management {

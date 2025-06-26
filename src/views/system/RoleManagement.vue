@@ -18,17 +18,10 @@
                         v-model:value="searchForm.roleName"
                         placeholder="请输入角色名称"
                         allow-clear
-                        style="width: 200px"
+                        class="form-compo"
                     />
                 </a-form-item>
-                <a-form-item label="角色编码">
-                    <a-input
-                        v-model:value="searchForm.roleCode"
-                        placeholder="请输入角色编码"
-                        allow-clear
-                        style="width: 200px"
-                    />
-                </a-form-item>
+              
                 <a-form-item>
                     <a-space>
                         <a-button type="primary" @click="handleSearch">
