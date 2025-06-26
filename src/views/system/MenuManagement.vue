@@ -115,12 +115,12 @@
                     </div>
                 </a-form-item>
                 
-                <a-form-item label="路由路径" name="menuUrl" v-if="menuForm.menuType === 'menu'">
+                <a-form-item label="路由路径" name="menuUrl" v-if="menuForm.menuType === 'MENU'">
                     <a-input v-model:value="menuForm.menuUrl" placeholder="请输入路由路径" />
                 </a-form-item>
                 
-                <a-form-item label="权限标识" name="menuOPERATEstrs" v-if="menuForm.menuType === 'operate'">
-                    <a-input v-model:value="menuForm.menuOPERATEstrs" placeholder="请输入权限标识，如：user:add" />
+                <a-form-item label="权限标识" name="menuPermissionstrs" v-if="menuForm.menuType === 'OPERATE'">
+                    <a-input v-model:value="menuForm.menuPermissionstrs" placeholder="请输入权限标识，如：user:add" />
                 </a-form-item>
                 
                 <a-form-item label="排序" name="menuOrdernum">
@@ -140,46 +140,8 @@
 <script setup>
 import { ref, reactive, onMounted, computed } from 'vue';
 import { message } from 'ant-design-vue';
-import {
-    PlusOutlined,
-    DeleteOutlined,
-    EditOutlined,
-    ApartmentOutlined,
-    MenuOutlined,
-    AppstoreOutlined,
-    KeyOutlined,
-    ReloadOutlined,
-    FolderOutlined,
-    FileOutlined
-} from '@ant-design/icons-vue';
 
-// 图标映射表，确保字符串能映射到组件
-const iconMap = {
-    FolderOutlined,
-    FileOutlined,
-    KeyOutlined,
-    PlusOutlined,
-    DeleteOutlined,
-    EditOutlined,
-    ApartmentOutlined,
-    MenuOutlined,
-    AppstoreOutlined,
-    ReloadOutlined
-};
 
-// 获取节点图标
-const getNodeIcon = (dataRef) => {
-    // 根据节点类型或其他属性返回对应的图标
-    if (dataRef.type === 'OPERATE') {
-        return 'KeyOutlined';
-    } else if (dataRef.children && dataRef.children.length > 0) {
-        return 'FolderOutlined';
-    } else {
-        return 'FileOutlined';
-    }
-};
-
-defineExpose({ iconMap, getNodeIcon });
 import { getMenuTree, createMenu, updateMenu, deleteMenu } from '@/api/menu.js';
 
 // 菜单树数据
@@ -210,9 +172,8 @@ const menuTreeData = computed(() => {
                 key: item.menuId,
                 title: item.menuName,
                 type: nodeType,
-                status: 1,
                 path: item.menuUrl || '',
-                OPERATE: item.menuOPERATEstrs || '',
+                menuPermissionstrs: item.menuPermissionstrs || '',
                 sort: item.menuOrdernum || 0,
                 parentId: item.menuParentId,
                 level: item.menuLevel,
@@ -260,7 +221,7 @@ const menuForm = reactive({
     menuName: '',
     menuType: 'MENU',
     menuUrl: '',
-    menuOPERATEstrs: '',
+    menuPermissionstrs: '',
     menuOrdernum: 0
 });
 
@@ -283,7 +244,7 @@ const menuFormRules = {
     menuUrl: [
         { required: true, message: '请输入路由路径', trigger: 'blur', type: 'string' }
     ],
-    menuOPERATEstrs: [
+    menuPermissionstrs: [
         { required: true, message: '请输入权限标识', trigger: 'blur', type: 'string' }
     ],
     menuOrdernum: [
@@ -312,9 +273,9 @@ const getAddMenuText = () => {
     
     // 根据选中节点的层级决定添加的是菜单还是操作
     const level = getNodeLevel(selectedNode.value);
-    if (level === 0 || level === 1) {
+    if (level === 0 ) {
         return '添加菜单';
-    } else if (level === 2) {
+    } else if (level === 1) {
         return '添加操作';
     }
     
@@ -494,7 +455,7 @@ const handleEdit = () => {
         menuName: node.title,
         menuType: menuType, // 使用根据层级计算的类型，而不是节点原有的类型
         menuUrl: node.path,
-        menuOPERATEstrs: node.OPERATE,
+        menuPermissionstrs: node.menuPermissionstrs,
         menuOrdernum: node.sort
     });
     
@@ -528,7 +489,7 @@ const handleMenuSubmit = async () => {
             menuName: menuForm.menuName,
             menuType: menuForm.menuType.toUpperCase(), // 转为大写以匹配后端枚举
             menuUrl: menuForm.menuUrl,
-            menuOPERATEstrs: menuForm.menuOPERATEstrs,
+            menuPermissionstrs: menuForm.menuPermissionstrs,
             menuOrdernum: menuForm.menuOrdernum,
             menuLevel: menuForm.menuParentId ? (findNodeById(menuTreeData.value, menuForm.menuParentId)?.level + 1 || 1) : 0
         };
@@ -572,7 +533,7 @@ const resetMenuForm = () => {
         menuName: '',
         menuType: 'MENU',
         menuUrl: '',
-        menuOPERATEstrs: '',
+        menuPermissionstrs: '',
         menuOrdernum: 0
     });
     menuFormRef.value?.resetFields();
