@@ -69,3 +69,13 @@ export function getUserRoles(userId) {
 export function getUserPermissions(userId) {
     return axiosGet(`/system/users/${userId}/permissions`);
 }
+
+// 获取用户菜单列表
+export function getUserMenus(userId) {
+    return axiosGet(`/system/users/${userId}/menus`);
+}
+
+// 分配用户菜单权限
+export function assignUserMenus(userId, data) {
+    return axiosPost(`/system/users/${userId}/menus`, data);
+}

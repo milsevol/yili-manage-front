@@ -129,6 +129,10 @@
                                             <TeamOutlined />
                                             分配角色
                                         </a-menu-item>
+                                        <a-menu-item @click="handleAssignMenu(record)">
+                                            <MenuOutlined />
+                                            分配菜单
+                                        </a-menu-item>
                                         <a-menu-item @click="handleResetPassword(record)">
                                             <KeyOutlined />
                                             重置密码
@@ -245,6 +249,52 @@
                 </a-form-item>
             </a-form>
         </a-modal>
+
+        <!-- 分配菜单弹窗 -->
+        <a-modal
+            v-model:open="menuModalVisible"
+            title="分配菜单权限"
+            width="600px"
+            @ok="handleMenuSubmit"
+            @cancel="handleMenuCancel"
+            class="menu-assignment-modal"
+        >
+            <a-form :label-col="{ span: 4 }" :wrapper-col="{ span: 20 }">
+                <a-form-item label="用户">
+                    <a-input 
+                        :value="currentUser?.userName" 
+                        disabled 
+                        class="user-input"
+                    >
+                        <template #prefix>
+                            <UserOutlined />
+                        </template>
+                    </a-input>
+                </a-form-item>
+                <a-form-item label="菜单权限" class="menus-form-item">
+                    <div class="menus-container">
+                        <a-tree
+                            v-model:checkedKeys="selectedMenus"
+                            v-model:expandedKeys="expandedKeys"
+                            :tree-data="menuTree"
+                            checkable
+                            :field-names="{ key: 'menuId', title: 'menuName', children: 'children' }"
+                            class="menu-tree"
+                        >
+                            <template #title="{ menuName, menuType, menuPath }">
+                                <span class="menu-node">
+                                    <span class="menu-name">{{ menuName }}</span>
+                                    <span class="menu-path" v-if="menuPath">{{ menuPath }}</span>
+                                    <a-tag v-if="menuType" size="small" :color="menuType === 'MENU' ? 'blue' : 'green'">
+                                        {{ menuType === 'MENU' ? '菜单' : '按钮' }}
+                                    </a-tag>
+                                </span>
+                            </template>
+                        </a-tree>
+                    </div>
+                </a-form-item>
+            </a-form>
+        </a-modal>
     </div>
 </template>
 
@@ -260,7 +310,8 @@ import {
     TeamOutlined,
     KeyOutlined,
     MoreOutlined,
-    UserOutlined
+    UserOutlined,
+    MenuOutlined
 } from '@ant-design/icons-vue';
 import {
     getUserList,
@@ -270,9 +321,12 @@ import {
     batchDeleteUsers,
     resetUserPassword,
     assignUserRoles,
-    getUserRoles
+    getUserRoles,
+    getUserMenus,
+    assignUserMenus
 } from '@/api/user.js';
 import { getRoleList } from '@/api/role.js';
+import { getMenuTree } from '@/api/menu.js';
 
 // 搜索表单
 const searchForm = reactive({
@@ -407,6 +461,12 @@ const roleModalVisible = ref(false);
 const roleList = ref([]);
 const selectedRoles = ref([]);
 const currentUser = ref(null);
+
+// 菜单相关
+const menuModalVisible = ref(false);
+const menuTree = ref([]);
+const selectedMenus = ref([]);
+const expandedKeys = ref([]);
 
 // 获取用户列表
 const fetchUserList = async () => {
@@ -544,6 +604,37 @@ const handleAssignRole = async (record) => {
     }
 };
 
+// 分配菜单
+const handleAssignMenu = async (record) => {
+    currentUser.value = record;
+    selectedMenus.value = [];
+    expandedKeys.value = [];
+    loading.value = true;
+    
+    try {
+        // 先获取菜单树
+        await fetchMenuTree();
+        
+        // 再获取用户当前菜单权限
+        const userMenusResponse = await getUserMenus(record.userId);
+        
+        // 设置用户已有的菜单权限
+        selectedMenus.value = userMenusResponse.data.map(menu => menu.menuId);
+        
+        // 设置默认展开的节点
+        expandedKeys.value = menuTree.value
+            .filter(item => item.children && item.children.length > 0)
+            .map(item => item.menuId);
+        
+        // 显示弹窗
+        menuModalVisible.value = true;
+    } catch (error) {
+        message.error('获取菜单信息失败');
+    } finally {
+        loading.value = false;
+    }
+};
+
 // 用户表单提交
 const handleUserSubmit = async () => {
     try {
@@ -622,9 +713,38 @@ const fetchRoleList = async () => {
     }
 };
 
+// 获取菜单树
+const fetchMenuTree = async () => {
+    try {
+        const response = await getMenuTree();
+        menuTree.value = response.data || [];
+    } catch (error) {
+        message.error('获取菜单树失败');
+    }
+};
+
+// 菜单分配提交
+const handleMenuSubmit = async () => {
+    try {
+        await assignUserMenus(currentUser.value.userId, { menuIds: selectedMenus.value });
+        message.success('菜单权限分配成功');
+        menuModalVisible.value = false;
+    } catch (error) {
+        message.error('菜单权限分配失败');
+    }
+};
+
+// 菜单分配取消
+const handleMenuCancel = () => {
+    menuModalVisible.value = false;
+    selectedMenus.value = [];
+    expandedKeys.value = [];
+};
+
 onMounted(() => {
     fetchUserList();
     fetchRoleList();
+    fetchMenuTree();
 });
 </script>
 
@@ -678,7 +798,109 @@ onMounted(() => {
             }
         }
     }
+    
+    // 角色分配弹窗样式
+    :deep(.role-assignment-modal) {
+        .user-input {
+            margin-bottom: 16px;
+        }
+        
+        .roles-container {
+            max-height: 400px;
+            overflow-y: auto;
+            padding-right: 8px;
+            
+            &::-webkit-scrollbar {
+                width: 6px;
+                background-color: #f5f5f5;
+            }
+            
+            &::-webkit-scrollbar-thumb {
+                background-color: #ccc;
+                border-radius: 3px;
+            }
+        }
+        
+        .role-card {
+            border: 1px solid #e8e8e8;
+            border-radius: 4px;
+            padding: 12px;
+            transition: all 0.3s;
+            cursor: pointer;
+            
+            &:hover {
+                border-color: #1890ff;
+                box-shadow: 0 2px 8px rgba(24, 144, 255, 0.15);
+            }
+            
+            &.role-card-selected {
+                border-color: #1890ff;
+                background-color: #e6f7ff;
+            }
+            
+            .role-info {
+                display: flex;
+                flex-direction: column;
+            }
+            
+            .role-name {
+                font-weight: 500;
+                margin-bottom: 4px;
+            }
+            
+            .role-desc {
+                font-size: 12px;
+                color: #8c8c8c;
+            }
+        }
+    }
+    
+    // 菜单分配弹窗样式
+    :deep(.menu-assignment-modal) {
+        .user-input {
+            margin-bottom: 16px;
+        }
+        
+        .menus-container {
+            max-height: 400px;
+            overflow-y: auto;
+            padding-right: 8px;
+            border: 1px solid #e8e8e8;
+            border-radius: 4px;
+            padding: 12px;
+            
+            &::-webkit-scrollbar {
+                width: 6px;
+                background-color: #f5f5f5;
+            }
+            
+            &::-webkit-scrollbar-thumb {
+                background-color: #ccc;
+                border-radius: 3px;
+            }
+        }
+        
+        .menu-tree {
+            .menu-node {
+                display: flex;
+                align-items: center;
+                flex-wrap: wrap;
+                
+                .menu-name {
+                    font-weight: 500;
+                    margin-right: 8px;
+                }
+                
+                .menu-path {
+                    font-size: 12px;
+                    color: #8c8c8c;
+                    margin-right: 8px;
+                }
+            }
+        }
+    }
 }
+
 // 响应式处理
 @media (max-width: 768px) {
     .user-management {
@@ -695,5 +917,4 @@ onMounted(() => {
             }
         }
     }
-}
-</style>
+}</style>
