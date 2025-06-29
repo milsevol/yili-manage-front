@@ -34,3 +34,8 @@ export function getRoleMenuTrees(roleId) {
 export function assignRoleMenus(roleId, data) {
     return axiosPost(`/system/roles/${roleId}/menus`, data);
 }
+
+// 获取角色下的用户列表
+export function getRoleUsers(roleId, params) {
+    return axiosGet(`/system/roles/${roleId}/users`, params);
+}

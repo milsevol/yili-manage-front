@@ -60,6 +60,15 @@
                     </a-button>
                     <a-button 
                         type="primary" 
+                        :disabled="!selectedRowKeys.length"
+                        @click="handleBatchAssignRole"
+                        style="margin-right: 8px;"
+                    >
+                        <TeamOutlined />
+                        批量分配角色
+                    </a-button>
+                    <a-button 
+                        type="primary" 
                         danger 
                         :disabled="!selectedRowKeys.length"
                         @click="handleBatchDelete"
@@ -157,7 +166,7 @@
         <a-modal
             v-model:open="userModalVisible"
             :title="isEdit ? '编辑用户' : '新增用户'"
-            width="600px"
+            :width="windowObj.innerWidth <= 768 ? '95%' : '600px'"
             @ok="handleUserSubmit"
             @cancel="handleUserCancel"
         >
@@ -203,12 +212,12 @@
         <a-modal
             v-model:open="roleModalVisible"
             title="分配角色"
-            width="600px"
+            :width="windowObj.innerWidth <= 768 ? '95%' : '700px'"
             @ok="handleRoleSubmit"
             @cancel="handleRoleCancel"
             class="role-assignment-modal"
         >
-            <a-form :label-col="{ span: 4 }" :wrapper-col="{ span: 20 }">
+            <a-form :label-col="{ span: 4 }" :wrapper-col="{ span: 20 }" style="width: 100%; overflow: hidden;">
                 <a-form-item label="用户">
                     <a-input 
                         :value="currentUser?.userName" 
@@ -220,20 +229,103 @@
                         </template>
                     </a-input>
                 </a-form-item>
-                <a-form-item label="角色" class="roles-form-item">
+                <a-form-item label="角色" class="roles-form-item" style="overflow: hidden;">
+                    <div class="roles-header" style="margin-bottom: 12px;">
+                        <a-input-search 
+                            v-model:value="roleSearchValue" 
+                            placeholder="搜索角色" 
+                            style="width: 200px; margin-right: 12px;"
+                            @change="handleRoleSearch"
+                        />
+                        <a-button 
+                            type="link" 
+                            size="small" 
+                            @click="handleSelectAllRoles"
+                        >
+                            {{ isAllRolesSelected ? '取消全选' : '全选' }}
+                        </a-button>
+                    </div>
                     <div class="roles-container">
                         <a-checkbox-group v-model:value="selectedRoles" class="role-checkbox-group">
-                            <a-row :gutter="[16, 16]">
+                            <a-row :gutter="[12, 12]">
                                 <a-col 
-                                    v-for="role in roleList" 
+                                    v-for="role in filteredRoleList" 
                                     :key="role.roleId" 
                                     :xs="24"
                                     :sm="12"
                                     :md="8"
+                                    :lg="8"
                                 >
                                     <div 
                                         class="role-card" 
                                         :class="{ 'role-card-selected': selectedRoles.includes(role.roleId) }"
+                                        @click="toggleRoleSelection(role.roleId)"
+                                    >
+                                        <a-checkbox :value="role.roleId">
+                                            <div class="role-info">
+                                                <span class="role-name">{{ role.roleName }}</span>
+                                                <span class="role-desc" v-if="role.roleDesc">{{ role.roleDesc }}</span>
+                                            </div>
+                                        </a-checkbox>
+                                    </div>
+                                </a-col>
+                            </a-row>
+                        </a-checkbox-group>
+                    </div>
+                </a-form-item>
+            </a-form>
+        </a-modal>
+        
+        <!-- 批量分配角色弹窗 -->
+        <a-modal
+            v-model:open="batchRoleModalVisible"
+            title="批量分配角色"
+            :width="windowObj.innerWidth <= 768 ? '95%' : '700px'"
+            @ok="handleBatchRoleSubmit"
+            @cancel="handleBatchRoleCancel"
+            class="role-assignment-modal"
+        >
+            <a-form :label-col="{ span: 4 }" :wrapper-col="{ span: 20 }" style="width: 100%; overflow: hidden;">
+                <a-form-item label="用户">
+                    <a-alert
+                        message="批量操作"
+                        :description="`已选择 ${selectedRowKeys.length} 个用户进行角色分配`"
+                        type="info"
+                        show-icon
+                        style="margin-bottom: 16px;"
+                    />
+                </a-form-item>
+                <a-form-item label="角色" class="roles-form-item" style="overflow: hidden;">
+                    <div class="roles-header" style="margin-bottom: 12px;">
+                        <a-input-search 
+                            v-model:value="batchRoleSearchValue" 
+                            placeholder="搜索角色" 
+                            style="width: 200px; margin-right: 12px;"
+                            @change="handleBatchRoleSearch"
+                        />
+                        <a-button 
+                            type="link" 
+                            size="small" 
+                            @click="handleBatchSelectAllRoles"
+                        >
+                            {{ isAllBatchRolesSelected ? '取消全选' : '全选' }}
+                        </a-button>
+                    </div>
+                    <div class="roles-container">
+                        <a-checkbox-group v-model:value="batchSelectedRoles" class="role-checkbox-group">
+                            <a-row :gutter="[12, 12]">
+                                <a-col 
+                                    v-for="role in filteredBatchRoleList" 
+                                    :key="role.roleId" 
+                                    :xs="24"
+                                    :sm="12"
+                                    :md="8"
+                                    :lg="8"
+                                >
+                                    <div 
+                                        class="role-card" 
+                                        :class="{ 'role-card-selected': batchSelectedRoles.includes(role.roleId) }"
+                                        @click="toggleBatchRoleSelection(role.roleId)"
                                     >
                                         <a-checkbox :value="role.roleId">
                                             <div class="role-info">
@@ -255,7 +347,7 @@
             v-model:open="menuModalVisible"
             title="分配菜单权限"
             
-            width="600px"
+            :width="windowObj.innerWidth <= 768 ? '95%' : '600px'"
             @ok="handleMenuSubmit"
             @cancel="handleMenuCancel"
             class="menu-assignment-modal"
@@ -306,7 +398,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, computed } from 'vue';
+import { ref, reactive, onMounted, onUnmounted, computed } from 'vue';
 import { message, Modal } from 'ant-design-vue';
 import {
     SearchOutlined,
@@ -330,10 +422,29 @@ import {
     assignUserRoles,
     getUserRoles,
     getUserMenus,
-    assignUserMenus
+    assignUserMenus,
+    batchAssignUserRoles
 } from '@/api/user.js';
 import { getRoleList } from '@/api/role.js';
 import { getUserMenuTree } from '@/api/menu.js';
+
+// 提供 window 对象给模板使用
+const windowObj = ref(window);
+
+// 监听窗口大小变化
+const updateWindowSize = () => {
+    windowObj.value = { ...window };
+};
+
+// 添加窗口大小变化的监听
+onMounted(() => {
+    window.addEventListener('resize', updateWindowSize);
+});
+
+// 组件卸载时移除监听
+onUnmounted(() => {
+    window.removeEventListener('resize', updateWindowSize);
+});
 
 // 搜索表单
 const searchForm = reactive({
@@ -465,9 +576,45 @@ const userFormRules = {
 
 // 角色相关
 const roleModalVisible = ref(false);
+const batchRoleModalVisible = ref(false);
 const roleList = ref([]);
 const selectedRoles = ref([]);
+const batchSelectedRoles = ref([]);
 const currentUser = ref(null);
+const roleSearchValue = ref('');
+
+// 计算过滤后的角色列表
+const filteredRoleList = computed(() => {
+    if (!roleSearchValue.value) return roleList.value;
+    return roleList.value.filter(role => 
+        role.roleName.toLowerCase().includes(roleSearchValue.value.toLowerCase()) ||
+        (role.roleDesc && role.roleDesc.toLowerCase().includes(roleSearchValue.value.toLowerCase()))
+    );
+});
+
+// 计算是否全部角色已选中
+const isAllRolesSelected = computed(() => {
+    return filteredRoleList.value.length > 0 && 
+           filteredRoleList.value.every(role => selectedRoles.value.includes(role.roleId));
+});
+
+// 批量角色搜索
+const batchRoleSearchValue = ref('');
+
+// 计算过滤后的批量角色列表
+const filteredBatchRoleList = computed(() => {
+    if (!batchRoleSearchValue.value) return roleList.value;
+    return roleList.value.filter(role => 
+        role.roleName.toLowerCase().includes(batchRoleSearchValue.value.toLowerCase()) ||
+        (role.roleDesc && role.roleDesc.toLowerCase().includes(batchRoleSearchValue.value.toLowerCase()))
+    );
+});
+
+// 计算是否全部批量角色已选中
+const isAllBatchRolesSelected = computed(() => {
+    return filteredBatchRoleList.value.length > 0 && 
+           filteredBatchRoleList.value.every(role => batchSelectedRoles.value.includes(role.roleId));
+});
 
 // 菜单相关
 const menuModalVisible = ref(false);
@@ -791,6 +938,36 @@ const handleUserCancel = () => {
     resetUserForm();
 };
 
+// 角色搜索
+const handleRoleSearch = () => {
+    // 搜索逻辑已通过计算属性 filteredRoleList 实现
+};
+
+// 切换角色选择
+const toggleRoleSelection = (roleId) => {
+    const index = selectedRoles.value.indexOf(roleId);
+    if (index === -1) {
+        selectedRoles.value.push(roleId);
+    } else {
+        selectedRoles.value.splice(index, 1);
+    }
+};
+
+// 全选/取消全选角色
+const handleSelectAllRoles = () => {
+    if (isAllRolesSelected.value) {
+        // 取消全选
+        selectedRoles.value = selectedRoles.value.filter(
+            roleId => !filteredRoleList.value.some(role => role.roleId === roleId)
+        );
+    } else {
+        // 全选
+        const filteredRoleIds = filteredRoleList.value.map(role => role.roleId);
+        const newSelectedRoles = [...new Set([...selectedRoles.value, ...filteredRoleIds])];
+        selectedRoles.value = newSelectedRoles;
+    }
+};
+
 // 角色分配提交
 const handleRoleSubmit = async () => {
     try {
@@ -803,11 +980,88 @@ const handleRoleSubmit = async () => {
     }
 };
 
+// 批量分配角色
+const handleBatchAssignRole = async () => {
+    if (selectedRowKeys.value.length === 0) {
+        message.warning('请先选择用户');
+        return;
+    }
+    
+    batchSelectedRoles.value = [];
+    loading.value = true;
+    
+    try {
+        // 获取所有角色列表
+        await fetchRoleList();
+        
+        // 显示弹窗
+        batchRoleModalVisible.value = true;
+    } catch (error) {
+        message.error('获取角色信息失败');
+    } finally {
+        loading.value = false;
+    }
+};
+
+// 批量角色搜索
+const handleBatchRoleSearch = () => {
+    // 搜索逻辑已通过计算属性 filteredBatchRoleList 实现
+};
+
+// 切换批量角色选择
+const toggleBatchRoleSelection = (roleId) => {
+    const index = batchSelectedRoles.value.indexOf(roleId);
+    if (index === -1) {
+        batchSelectedRoles.value.push(roleId);
+    } else {
+        batchSelectedRoles.value.splice(index, 1);
+    }
+};
+
+// 全选/取消全选批量角色
+const handleBatchSelectAllRoles = () => {
+    if (isAllBatchRolesSelected.value) {
+        // 取消全选
+        batchSelectedRoles.value = batchSelectedRoles.value.filter(
+            roleId => !filteredBatchRoleList.value.some(role => role.roleId === roleId)
+        );
+    } else {
+        // 全选
+        const filteredRoleIds = filteredBatchRoleList.value.map(role => role.roleId);
+        const newSelectedRoles = [...new Set([...batchSelectedRoles.value, ...filteredRoleIds])];
+        batchSelectedRoles.value = newSelectedRoles;
+    }
+};
+
+// 批量角色分配提交
+const handleBatchRoleSubmit = async () => {
+    try {
+        await batchAssignUserRoles({
+            userIds: selectedRowKeys.value,
+            roleIds: batchSelectedRoles.value
+        });
+        message.success('批量角色分配成功');
+        batchRoleModalVisible.value = false;
+        selectedRowKeys.value = [];
+        fetchUserList();
+    } catch (error) {
+        message.error('批量角色分配失败');
+    }
+};
+
+// 批量角色分配取消
+const handleBatchRoleCancel = () => {
+    batchRoleModalVisible.value = false;
+    batchSelectedRoles.value = [];
+    batchRoleSearchValue.value = '';
+};
+
 // 角色分配取消
 const handleRoleCancel = () => {
     roleModalVisible.value = false;
     selectedRoles.value = [];
     currentUser.value = null;
+    roleSearchValue.value = '';
 };
 
 // 重置用户表单
@@ -1114,6 +1368,124 @@ onMounted(() => {
         }
     }      
 }
+
+// 角色分配弹窗样式优化
+.role-assignment-modal {
+    :deep(.ant-modal-content) {
+        border-radius: 8px;
+        overflow: hidden;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        max-width: 100%; /* 确保内容不超出 */
+        
+        .ant-modal-header {
+            padding: 16px 24px;
+            border-bottom: 1px solid #f0f0f0;
+            background: #fafafa;
+            
+            .ant-modal-title {
+                font-size: 16px;
+                font-weight: 600;
+                color: #262626;
+            }
+        }
+        
+        .ant-modal-body {
+            padding: 24px;
+            overflow-x: hidden; /* 防止水平滚动 */
+        }
+        
+        .ant-modal-footer {
+            padding: 10px 24px;
+            border-top: 1px solid #f0f0f0;
+        }
+    }
+    
+    .roles-container {
+        max-height: 450px; /* 增加容器高度 */
+        overflow-y: auto;
+        overflow-x: hidden; /* 防止水平滚动 */
+        padding: 8px 0;
+        border-radius: 4px;
+        
+        &::-webkit-scrollbar {
+            width: 6px;
+        }
+        
+        &::-webkit-scrollbar-thumb {
+            background-color: #d9d9d9;
+            border-radius: 3px;
+        }
+        
+        &::-webkit-scrollbar-track {
+            background-color: #f5f5f5;
+        }
+        
+        .role-checkbox-group {
+            width: 100%;
+            overflow: hidden; /* 防止内容溢出 */
+            
+            .role-card {
+                position: relative;
+                padding: 10px; /* 减小内边距 */
+                border-radius: 6px;
+                border: 1px solid #f0f0f0;
+                transition: all 0.3s ease;
+                height: auto; /* 改为自适应高度 */
+                min-height: 60px; /* 设置最小高度 */
+                display: flex;
+                align-items: center;
+                
+                &:hover {
+                    border-color: #1890ff;
+                    box-shadow: 0 2px 8px rgba(24, 144, 255, 0.15);
+                }
+                
+                &.role-card-selected {
+                    background-color: #e6f7ff;
+                    border-color: #1890ff;
+                }
+                
+                .ant-checkbox {
+                    margin-right: 6px;
+                    flex-shrink: 0;
+                }
+                
+                .role-info {
+                    display: flex;
+                    flex-direction: column;
+                    overflow: hidden;
+                    flex: 1;
+                    max-width: 100%; /* 限制最大宽度 */
+                    
+                    .role-name {
+                        font-weight: 500;
+                        color: #262626;
+                        margin-bottom: 2px;
+                        font-size: 14px;
+                        line-height: 1.4;
+                    }
+                    
+                    .role-desc {
+                        color: #8c8c8c;
+                        font-size: 12px;
+                        white-space: normal; /* 允许文本换行 */
+                        overflow: hidden;
+                        text-overflow: ellipsis;
+                        display: -webkit-box;
+                        -webkit-line-clamp: 2; /* 限制最多显示两行 */
+                        -webkit-box-orient: vertical;
+                        line-height: 1.3;
+                    }
+                }
+            }
+        }
+    }
+    
+    .user-input {
+        border-radius: 4px;
+    }
+}
+
 .menu-assignment-modal  {
     .menus-container {
         max-height: 400px;
@@ -1149,7 +1521,6 @@ onMounted(() => {
     }
 }
 
-
 // 响应式处理
 @media (max-width: 768px) {
     .user-management {
@@ -1166,6 +1537,37 @@ onMounted(() => {
             }
         }
     }
+    
+    .role-assignment-modal {
+        width: 100% !important; // 确保弹窗宽度不超过屏幕
+        
+        :deep(.ant-modal-content) {
+            width: 100%;
+            max-width: 100vw;
+        }
+        
+        .roles-container {
+            max-height: 350px; // 小屏幕下减小容器高度
+            overflow-x: hidden; // 防止水平滚动
+            
+            .role-checkbox-group {
+                .role-card {
+                    margin-bottom: 8px;
+                    min-height: 50px; // 小屏幕下减小卡片最小高度
+                    
+                    .role-info {
+                        .role-name {
+                            font-size: 13px;
+                        }
+                        
+                        .role-desc {
+                            font-size: 11px;
+                            -webkit-line-clamp: 1; // 小屏幕下只显示一行描述
+                        }
+                    }
+                }
+            }
+        }
+    }
 }
-
 </style>

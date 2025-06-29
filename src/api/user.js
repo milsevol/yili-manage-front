@@ -79,3 +79,8 @@ export function getUserMenus(userId) {
 export function assignUserMenus(userId, data) {
     return axiosPost(`/system/users/${userId}/menus`, data);
 }
+
+// 批量分配用户角色
+export function batchAssignUserRoles(data) {
+    return axiosPost('/system/users/batch/roles', data);
+}

@@ -83,9 +83,9 @@
                                 <template #icon><MenuOutlined /></template>
                                 分配菜单
                             </a-button>
-                            <a-button type="link" size="small" @click="handleViewPermissions(record)">
-                                <template #icon><KeyOutlined /></template>
-                                权限
+                            <a-button type="link" size="small" @click="handleViewUsers(record)">
+                                <template #icon><TeamOutlined /></template>
+                                用户列表
                             </a-button>
                             <a-popconfirm
                                 title="确定要删除这个角色吗？"
@@ -135,35 +135,38 @@
             </a-form>
         </a-modal>
 
-        <!-- 权限详情弹窗 -->
+        <!-- 角色用户列表弹窗 -->
         <a-modal
-            v-model:open="permissionModalVisible"
-            title="权限详情"
+            v-model:open="userModalVisible"
+            title="角色用户列表"
             width="800px"
             :footer="null"
         >
             <div v-if="currentRole">
-                <a-descriptions :column="2" bordered>
+                <a-descriptions :column="1" bordered>
                     <a-descriptions-item label="角色名称">
                         {{ currentRole.roleName }}
                     </a-descriptions-item>
-                    <a-descriptions-item label="角色ID">
-                        {{ currentRole.roleId }}
-                    </a-descriptions-item>
-                    <a-descriptions-item label="创建用户">
-                        {{ currentRole.roleUserName || '未知用户' }}
-                    </a-descriptions-item>
-                    <a-descriptions-item label="创建时间">
-                        {{ currentRole.inserttime }}
-                    </a-descriptions-item>
-                    <a-descriptions-item label="更新时间" :span="2">
-                        {{ currentRole.updatetime }}
-                    </a-descriptions-item>
                 </a-descriptions>
                 
-                <a-divider>角色详情</a-divider>
+                <a-divider>用户列表</a-divider>
                 
-                <a-empty description="角色详情已在上方显示" />
+                <a-table
+                    :columns="userColumns"
+                    :data-source="roleUsers"
+                    :pagination="userPagination"
+                    :loading="userLoading"
+                    row-key="userId"
+                    @change="handleUserTableChange"
+                >
+                    <template #bodyCell="{ column, record }">
+                        <template v-if="column.key === 'userType'">
+                            <a-tag :color="record.userType === 'OA' ? 'blue' : 'orange'">
+                                {{ record.userType === 'OA' ? 'OA用户' : '外部用户' }}
+                            </a-tag>
+                        </template>
+                    </template>
+                </a-table>
             </div>
         </a-modal>
 
@@ -230,7 +233,7 @@ import {
     PlusOutlined,
     DeleteOutlined,
     EditOutlined,
-    KeyOutlined,
+    TeamOutlined,
     SettingOutlined,
     MenuOutlined
 } from '@ant-design/icons-vue';
@@ -241,7 +244,8 @@ import {
     deleteRole,
     getRoleDetail,
     getRoleMenuTrees,
-    assignRoleMenus
+    assignRoleMenus,
+    getRoleUsers
 } from '@/api/role.js';
 
 // 搜索表单
@@ -317,15 +321,71 @@ const roleFormRules = {
     ]
 };
 
-// 权限详情
-const permissionModalVisible = ref(false);
+// 角色用户列表
+const userModalVisible = ref(false);
 const currentRole = ref(null);
+const roleUsers = ref([]);
+const userLoading = ref(false);
+const userPagination = reactive({
+    current: 1,
+    pageSize: 10,
+    total: 0,
+    showSizeChanger: true,
+    showQuickJumper: true,
+    showTotal: (total) => `共 ${total} 条记录`
+});
 
 // 菜单权限相关
 const menuModalVisible = ref(false);
 const menuTree = ref([]);
 const selectedMenus = ref([]);
 const expandedKeys = ref([]);
+
+// 用户列表列定义
+const userColumns = [
+    {
+        title: '用户ID',
+        dataIndex: 'userId',
+        key: 'userId',
+        width: '15%',
+    },
+    {
+        title: '用户名',
+        dataIndex: 'userName',
+        key: 'userName',
+        width: '15%',
+    },
+    {
+        title: '姓名',
+        dataIndex: 'userRealName',
+        key: 'userRealName',
+        width: '15%',
+    },
+    {
+        title: '邮箱',
+        dataIndex: 'userEmail',
+        key: 'userEmail',
+        width: '20%',
+    },
+    {
+        title: '手机号',
+        dataIndex: 'userMobile',
+        key: 'userMobile',
+        width: '15%',
+    },
+    {
+        title: '部门',
+        dataIndex: 'userDepartment',
+        key: 'userDepartment',
+        width: '15%',
+    },
+    {
+        title: '用户类型',
+        dataIndex: 'userType',
+        key: 'userType',
+        width: '15%',
+    },
+];
 
 // 表格行选择
 const selectedRowKeys = ref([]);
@@ -403,15 +463,39 @@ const handleDelete = async (record) => {
     }
 };
 
-// 查看权限详情
-const handleViewPermissions = async (record) => {
+// 查看角色用户列表
+const handleViewUsers = async (record) => {
+    currentRole.value = record;
+    userModalVisible.value = true;
+    userPagination.current = 1;
+    await fetchRoleUsers();
+};
+
+// 获取角色用户列表
+const fetchRoleUsers = async () => {
+    if (!currentRole.value) return;
+    
+    userLoading.value = true;
     try {
-        const response = await getRoleDetail(record.roleId);
-        currentRole.value = response.data;
-        permissionModalVisible.value = true;
+        const params = {
+            pageNum: userPagination.current,
+            pageSize: userPagination.pageSize
+        };
+        const response = await getRoleUsers(currentRole.value.roleId, params);
+        roleUsers.value = response.data.list || [];
+        userPagination.total = response.data.total || 0;
     } catch (error) {
-        message.error('获取角色详情失败');
+        message.error('获取角色用户列表失败');
+    } finally {
+        userLoading.value = false;
     }
+};
+
+// 用户列表分页变化
+const handleUserTableChange = (pag) => {
+    userPagination.current = pag.current;
+    userPagination.pageSize = pag.pageSize;
+    fetchRoleUsers();
 };
 
 // 配置菜单权限
