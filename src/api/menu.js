@@ -5,6 +5,11 @@ export function getMenuTree() {
     return axiosGet('/system/menus/tree');
 }
 
+// 获取用户菜单树（包含权限标记）
+export function getUserMenuTree(userId) {
+    return axiosGet(`/system/users/${userId}/menuTrees`);
+}
+
 // 获取菜单列表
 export function getMenuList(params) {
     return axiosGet('/system/menus', params);

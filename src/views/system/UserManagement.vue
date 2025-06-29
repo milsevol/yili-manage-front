@@ -278,6 +278,7 @@
                             v-model:expandedKeys="expandedKeys"
                             :tree-data="menuTree"
                             checkable
+                            :check-strictly="true"
                             :field-names="{ key: 'menuId', title: 'menuName', children: 'children' }"
                             class="menu-tree"
                         >
@@ -326,7 +327,7 @@ import {
     assignUserMenus
 } from '@/api/user.js';
 import { getRoleList } from '@/api/role.js';
-import { getMenuTree } from '@/api/menu.js';
+import { getUserMenuTree } from '@/api/menu.js';
 
 // 搜索表单
 const searchForm = reactive({
@@ -604,6 +605,30 @@ const handleAssignRole = async (record) => {
     }
 };
 
+// 处理菜单选中逻辑，确保只勾选用户实际拥有的菜单
+const processSelectedMenus = (menuIds, menuTreeData) => {
+    // 创建一个映射，记录每个菜单的实际选中状态
+    const menuSelectedMap = new Map();
+    
+    // 递归处理菜单树，标记实际拥有权限的菜单
+    const markSelectedMenus = (menus) => {
+        for (const menu of menus) {
+            // 只有当菜单ID在用户权限列表中时，才标记为选中
+            menuSelectedMap.set(menu.menuId, menuIds.includes(menu.menuId));
+            
+            // 递归处理子菜单
+            if (menu.children && menu.children.length > 0) {
+                markSelectedMenus(menu.children);
+            }
+        }
+    };
+    
+    markSelectedMenus(menuTreeData);
+    
+    // 只返回实际选中的菜单ID
+    return menuIds.filter(menuId => menuSelectedMap.has(menuId) && menuSelectedMap.get(menuId));
+};
+
 // 分配菜单
 const handleAssignMenu = async (record) => {
     currentUser.value = record;
@@ -612,14 +637,40 @@ const handleAssignMenu = async (record) => {
     loading.value = true;
     
     try {
-        // 先获取菜单树
-        await fetchMenuTree();
+        // 获取用户菜单树（包含权限标记）
+        const userMenuTreeResponse = await getUserMenuTree(record.userId);
+        console.log('userMenuTreeResponse', userMenuTreeResponse);
         
-        // 再获取用户当前菜单权限
-        const userMenusResponse = await getUserMenus(record.userId);
+        // 处理菜单树数据，将true字段重命名为isTrue字段
+        const processMenuTree = (menus) => {
+            if (!menus || !Array.isArray(menus)) return [];
+            
+            return menus.map(menu => {
+                // 创建新对象，避免修改原始对象
+                const newMenu = { ...menu };
+                
+                // 将true字段重命名为isTrue字段
+                if ('true' in newMenu) {
+                    newMenu.isTrue = newMenu.true;
+                }
+                
+                // 递归处理子菜单
+                if (newMenu.children && Array.isArray(newMenu.children)) {
+                    newMenu.children = processMenuTree(newMenu.children);
+                }
+                
+                return newMenu;
+            });
+        };
         
-        // 设置用户已有的菜单权限
-        selectedMenus.value = userMenusResponse.data.map(menu => menu.menuId);
+        // 处理菜单树数据
+        menuTree.value = processMenuTree(userMenuTreeResponse.data || []);
+        
+        // 获取用户已有的菜单权限ID列表（从带有权限标记的菜单树中提取）
+        const userMenuIds = extractUserMenuIds(menuTree.value);
+        
+        // 设置选中的菜单
+        selectedMenus.value = userMenuIds;
         
         // 设置默认展开的节点
         expandedKeys.value = menuTree.value
@@ -629,10 +680,35 @@ const handleAssignMenu = async (record) => {
         // 显示弹窗
         menuModalVisible.value = true;
     } catch (error) {
+        console.error('获取菜单信息失败:', error);
         message.error('获取菜单信息失败');
     } finally {
         loading.value = false;
     }
+};
+
+// 从带有权限标记的菜单树中提取用户拥有权限的菜单ID
+const extractUserMenuIds = (menuTreeData) => {
+    console.log('menuTreeData', menuTreeData);
+    const menuIds = [];
+    
+    const extractIds = (menus) => {
+        for (const menu of menus) {
+            // 如果用户有该菜单权限，添加到结果中
+            // 我们已经在handleAssignMenu中将true字段重命名为isTrue字段
+            if (menu.isTrue) {
+                menuIds.push(menu.menuId);
+            }
+            
+            // 递归处理子菜单
+            if (menu.children && menu.children.length > 0) {
+                extractIds(menu.children);
+            }
+        }
+    };
+    
+    extractIds(menuTreeData);
+    return menuIds;
 };
 
 // 用户表单提交
@@ -713,23 +789,15 @@ const fetchRoleList = async () => {
     }
 };
 
-// 获取菜单树
-const fetchMenuTree = async () => {
-    try {
-        const response = await getMenuTree();
-        menuTree.value = response.data || [];
-    } catch (error) {
-        message.error('获取菜单树失败');
-    }
-};
-
 // 菜单分配提交
 const handleMenuSubmit = async () => {
     try {
+        // 提交选中的菜单ID列表
         await assignUserMenus(currentUser.value.userId, { menuIds: selectedMenus.value });
         message.success('菜单权限分配成功');
         menuModalVisible.value = false;
     } catch (error) {
+        console.error('菜单权限分配失败:', error);
         message.error('菜单权限分配失败');
     }
 };
@@ -744,7 +812,8 @@ const handleMenuCancel = () => {
 onMounted(() => {
     fetchUserList();
     fetchRoleList();
-    fetchMenuTree();
+    // 不再需要在初始化时获取菜单树，因为在分配菜单时会通过getUserMenuTree获取
+    // fetchMenuTree();
 });
 </script>
 
