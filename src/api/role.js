@@ -24,3 +24,13 @@ export function updateRole(roleId, data) {
 export function deleteRole(roleId) {
     return axiosDelete(`/system/roles/${roleId}`);
 }
+
+// 获取角色菜单树
+export function getRoleMenuTrees(roleId) {
+    return axiosGet(`/system/roles/${roleId}/menuTrees`);
+}
+
+// 分配角色菜单权限
+export function assignRoleMenus(roleId, data) {
+    return axiosPost(`/system/roles/${roleId}/menus`, data);
+}
