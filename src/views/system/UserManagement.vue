@@ -254,6 +254,7 @@
         <a-modal
             v-model:open="menuModalVisible"
             title="分配菜单权限"
+            
             width="600px"
             @ok="handleMenuSubmit"
             @cancel="handleMenuCancel"
@@ -277,19 +278,24 @@
                             v-model:checkedKeys="selectedMenus"
                             v-model:expandedKeys="expandedKeys"
                             :tree-data="menuTree"
+                            blockNode
                             checkable
-                            :check-strictly="true"
+                            @check="handleMenuCheck"
                             :field-names="{ key: 'menuId', title: 'menuName', children: 'children' }"
                             class="menu-tree"
                         >
                             <template #title="{ menuName, menuType, menuPath }">
-                                <span class="menu-node">
-                                    <span class="menu-name">{{ menuName }}</span>
-                                    <span class="menu-path" v-if="menuPath">{{ menuPath }}</span>
-                                    <a-tag v-if="menuType" size="small" :color="menuType === 'MENU' ? 'blue' : 'green'">
-                                        {{ menuType === 'MENU' ? '菜单' : '按钮' }}
-                                    </a-tag>
-                                </span>
+                                <div style="display: flex; width: 100%; justify-content: space-between; align-items: center;">
+                                    <div>
+                                        <span class="menu-name">{{ menuName }}</span>
+                                        <span class="menu-path" v-if="menuPath">{{ menuPath }}</span>
+                                    </div>
+                                    <div>
+                                        <a-tag v-if="menuType" size="small" :color="menuType === 'MENU' ? 'blue' : 'green'">
+                                            {{ menuType === 'MENU' ? '菜单' : '权限' }}
+                                        </a-tag>
+                                    </div>
+                                  </div>
                             </template>
                         </a-tree>
                     </div>
@@ -568,7 +574,7 @@ const handleBatchDelete = () => {
 const handleResetPassword = (record) => {
     Modal.confirm({
         title: '确定要重置密码吗？',
-        content: '重置后密码将变为：123456',
+        content: '重置后密码将变为：yili1234',
         onOk: async () => {
             try {
                 await resetUserPassword(record.userId, { newPassword: '123456' });
@@ -653,6 +659,10 @@ const handleAssignMenu = async (record) => {
                 if ('true' in newMenu) {
                     newMenu.isTrue = newMenu.true;
                 }
+                // 兼容后端可能返回allTrue字段的情况
+                if ('allTrue' in newMenu) {
+                    newMenu.isTrue = newMenu.allTrue;
+                }
                 
                 // 递归处理子菜单
                 if (newMenu.children && Array.isArray(newMenu.children)) {
@@ -669,8 +679,47 @@ const handleAssignMenu = async (record) => {
         // 获取用户已有的菜单权限ID列表（从带有权限标记的菜单树中提取）
         const userMenuIds = extractUserMenuIds(menuTree.value);
         
-        // 设置选中的菜单
-        selectedMenus.value = userMenuIds;
+        // 处理父子节点的选中关系
+        const processParentChildSelection = (menuIds) => {
+            // 创建一个新的选中菜单ID数组
+            let newSelectedMenus = [...menuIds];
+            
+            // 处理父节点选中状态
+            const processParentSelection = (menus) => {
+                for (const menu of menus) {
+                    if (menu.children && menu.children.length > 0) {
+                        // 递归处理子菜单
+                        processParentSelection(menu.children);
+                        
+                        // 检查所有子节点是否都被选中，不再限制只考虑有权限的子节点
+                        const allChildrenSelected = menu.children.every(child => {
+                            // 直接子节点是否选中，不再检查isTrue属性
+                            const isChildSelected = newSelectedMenus.includes(child.menuId);
+                            
+                            // 如果子节点有子节点，则需要检查所有孙节点是否都被选中
+                            if (child.children && child.children.length > 0) {
+                                return isChildSelected && child.children.every(grandChild => 
+                                    newSelectedMenus.includes(grandChild.menuId)
+                                );
+                            }
+                            
+                            return isChildSelected;
+                        });
+                        
+                        // 如果所有子节点都被选中，则选中父节点，不再检查isTrue属性
+                        if (allChildrenSelected && !newSelectedMenus.includes(menu.menuId)) {
+                            newSelectedMenus.push(menu.menuId);
+                        }
+                    }
+                }
+            };
+            
+            processParentSelection(menuTree.value);
+            return newSelectedMenus;
+        };
+        
+        // 设置选中的菜单，并处理父子节点的选中关系
+        selectedMenus.value = processParentChildSelection(userMenuIds);
         
         // 设置默认展开的节点
         expandedKeys.value = menuTree.value
@@ -696,6 +745,7 @@ const extractUserMenuIds = (menuTreeData) => {
         for (const menu of menus) {
             // 如果用户有该菜单权限，添加到结果中
             // 我们已经在handleAssignMenu中将true字段重命名为isTrue字段
+            // 注意：这里仍然保留isTrue检查，因为这是初始加载时提取用户已有权限
             if (menu.isTrue) {
                 menuIds.push(menu.menuId);
             }
@@ -789,11 +839,207 @@ const fetchRoleList = async () => {
     }
 };
 
+// 处理菜单节点勾选事件
+const handleMenuCheck = (checkedKeys, e) => {
+    const { checked, node } = e;
+    const menuId = node.menuId;
+    
+    // 获取当前节点的所有子节点ID
+    const getChildrenIds = (menu) => {
+        const ids = [];
+        if (menu.children && menu.children.length > 0) {
+            for (const child of menu.children) {
+                // 允许勾选所有子节点，不再限制只勾选有权限的子节点
+                ids.push(child.menuId);
+                ids.push(...getChildrenIds(child));
+            }
+        }
+        return ids;
+    };
+    
+    // 获取当前节点的所有父节点ID
+    const getParentIds = (menuId, menus, parentIds = []) => {
+        for (const menu of menus) {
+            if (menu.children && menu.children.length > 0) {
+                // 检查当前节点的子节点中是否包含目标节点
+                const hasTarget = menu.children.some(child => 
+                    child.menuId === menuId || 
+                    (child.children && getParentIds(menuId, [child], []).length > 0)
+                );
+                
+                if (hasTarget) {
+                    parentIds.push(menu.menuId);
+                    // 继续向上查找父节点
+                    if (menus !== menuTree.value) {
+                        getParentIds(menu.menuId, menuTree.value, parentIds);
+                    }
+                    break;
+                } else {
+                    // 递归查找子节点
+                    getParentIds(menuId, menu.children, parentIds);
+                }
+            }
+        }
+        return parentIds;
+    };
+    
+    // 检查节点的所有子节点是否都被选中
+    const areAllChildrenChecked = (menu, checkedKeys) => {
+        if (!menu.children || menu.children.length === 0) {
+            return true;
+        }
+        
+        // 考虑所有子节点，不再限制只考虑有权限的子节点
+        return menu.children.every(child => {
+            const isChecked = checkedKeys.includes(child.menuId);
+            if (!isChecked) return false;
+            
+            // 递归检查子节点
+            if (child.children && child.children.length > 0) {
+                return areAllChildrenChecked(child, checkedKeys);
+            }
+            return true;
+        });
+    };
+    
+    // 创建一个新的选中菜单ID数组
+    let newSelectedMenus = [...selectedMenus.value];
+    
+    if (checked) {
+        // 勾选当前节点，允许用户手动勾选任何菜单节点
+        if (!newSelectedMenus.includes(menuId)) {
+            newSelectedMenus.push(menuId);
+        }
+        
+        // 勾选所有有权限的子节点
+        const childrenIds = getChildrenIds(node);
+        for (const id of childrenIds) {
+            if (!newSelectedMenus.includes(id)) {
+                newSelectedMenus.push(id);
+            }
+        }
+    } else {
+        // 取消勾选当前节点
+        newSelectedMenus = newSelectedMenus.filter(id => id !== menuId);
+        
+        // 取消勾选所有子节点
+        const childrenIds = getChildrenIds(node);
+        newSelectedMenus = newSelectedMenus.filter(id => !childrenIds.includes(id));
+        
+        // 如果取消勾选的是子节点，且该子节点的同级节点不是全部选中，则取消勾选父节点
+        const parentIds = getParentIds(menuId, menuTree.value);
+        for (const parentId of parentIds) {
+            // 找到父节点对象
+            const findParentNode = (menus, id) => {
+                for (const menu of menus) {
+                    if (menu.menuId === id) return menu;
+                    if (menu.children && menu.children.length > 0) {
+                        const found = findParentNode(menu.children, id);
+                        if (found) return found;
+                    }
+                }
+                return null;
+            };
+            
+            const parentNode = findParentNode(menuTree.value, parentId);
+            if (parentNode && !areAllChildrenChecked(parentNode, newSelectedMenus)) {
+                newSelectedMenus = newSelectedMenus.filter(id => id !== parentId);
+            }
+        }
+    }
+    
+    // 更新选中的菜单ID
+    selectedMenus.value = newSelectedMenus;
+};
+
 // 菜单分配提交
 const handleMenuSubmit = async () => {
     try {
+        // 获取真正需要提交的菜单ID列表
+        // 这里我们需要确保提交的菜单ID是用户真正需要的，而不是因为父子关联自动选中的
+        const getActualSelectedMenuIds = () => {
+            // 创建一个映射，记录每个菜单的实际选中状态
+            const menuMap = new Map();
+            
+            // 递归处理菜单树，标记每个菜单节点
+            const processMenus = (menus) => {
+                for (const menu of menus) {
+                    // 记录菜单节点信息
+                    menuMap.set(menu.menuId, {
+                        id: menu.menuId,
+                        isSelected: selectedMenus.value.includes(menu.menuId),
+                        hasChildren: menu.children && menu.children.length > 0,
+                        children: menu.children ? menu.children.map(child => child.menuId) : []
+                    });
+                    
+                    // 递归处理子菜单
+                    if (menu.children && menu.children.length > 0) {
+                        processMenus(menu.children);
+                    }
+                }
+            };
+            
+            processMenus(menuTree.value);
+            
+            // 过滤出真正需要提交的菜单ID，只包括用户实际有权限的菜单
+            return selectedMenus.value.filter(menuId => {
+                const menuInfo = menuMap.get(menuId);
+                if (!menuInfo) return false;
+                
+                // 查找菜单节点对象，检查是否有权限
+                const findMenuNode = (menus, id) => {
+                    for (const menu of menus) {
+                        if (menu.menuId === id) return menu;
+                        if (menu.children && menu.children.length > 0) {
+                            const found = findMenuNode(menu.children, id);
+                            if (found) return found;
+                        }
+                    }
+                    return null;
+                };
+                
+                const menuNode = findMenuNode(menuTree.value, menuId);
+                // 如果节点不存在，则不提交
+                if (!menuNode) return false;
+                
+                // 重要：如果是用户手动选中的菜单，即使没有isTrue标记，也应该提交
+                // 这样可以确保用户手动选中的菜单被正确提交
+                // 不再检查isTrue属性，允许提交所有用户手动选中的菜单
+                
+                // 如果是叶子节点或者不是所有子节点都被选中，则需要提交
+                if (!menuInfo.hasChildren) return true;
+                
+                // 考虑所有子节点，不再限制只考虑有权限的子节点
+                const children = menuInfo.children;
+                
+                // 如果没有子节点，则需要提交父节点
+                if (children.length === 0) return true;
+                
+                // 检查是否所有子节点都被选中
+                const allChildrenSelected = children.every(childId => 
+                    selectedMenus.value.includes(childId)
+                );
+                
+                // 如果不是所有子节点都被选中，则需要提交父节点
+                return !allChildrenSelected;
+            });
+        };
+        
         // 提交选中的菜单ID列表
-        await assignUserMenus(currentUser.value.userId, { menuIds: selectedMenus.value });
+        console.log('用户手动选中的菜单ID列表:', selectedMenus.value);
+        const menuIdsToSubmit = getActualSelectedMenuIds();
+        console.log('实际提交的菜单ID列表:', menuIdsToSubmit);
+        
+        // 确保提交的菜单ID列表不为空
+        if (menuIdsToSubmit.length === 0 && selectedMenus.value.length > 0) {
+            // 如果过滤后的菜单ID为空但用户选中了菜单，则直接提交用户选中的菜单ID
+            console.log('过滤后菜单ID为空，直接提交用户选中的菜单ID');
+            await assignUserMenus(currentUser.value.userId, { menuIds: selectedMenus.value });
+        } else {
+            // 正常提交过滤后的菜单ID
+            await assignUserMenus(currentUser.value.userId, { menuIds: menuIdsToSubmit });
+        }
+        
         message.success('菜单权限分配成功');
         menuModalVisible.value = false;
     } catch (error) {
@@ -866,109 +1112,43 @@ onMounted(() => {
                 }
             }
         }
-    }
-    
-    // 角色分配弹窗样式
-    :deep(.role-assignment-modal) {
-        .user-input {
-            margin-bottom: 16px;
+    }      
+}
+.menu-assignment-modal  {
+    .menus-container {
+        max-height: 400px;
+        overflow-y: auto;
+        border: 1px solid #f0f0f0;
+        padding: 10px;
+        border-radius: 4px;
+        
+        &::-webkit-scrollbar {
+            width: 6px;
         }
         
-        .roles-container {
-            max-height: 400px;
-            overflow-y: auto;
-            padding-right: 8px;
-            
-            &::-webkit-scrollbar {
-                width: 6px;
-                background-color: #f5f5f5;
-            }
-            
-            &::-webkit-scrollbar-thumb {
-                background-color: #ccc;
-                border-radius: 3px;
-            }
+        &::-webkit-scrollbar-thumb {
+            background-color: #d9d9d9;
+            border-radius: 3px;
         }
         
-        .role-card {
-            border: 1px solid #e8e8e8;
-            border-radius: 4px;
-            padding: 12px;
-            transition: all 0.3s;
-            cursor: pointer;
-            
-            &:hover {
-                border-color: #1890ff;
-                box-shadow: 0 2px 8px rgba(24, 144, 255, 0.15);
-            }
-            
-            &.role-card-selected {
-                border-color: #1890ff;
-                background-color: #e6f7ff;
-            }
-            
-            .role-info {
-                display: flex;
-                flex-direction: column;
-            }
-            
-            .role-name {
-                font-weight: 500;
-                margin-bottom: 4px;
-            }
-            
-            .role-desc {
-                font-size: 12px;
-                color: #8c8c8c;
-            }
-        }
-    }
-    
-    // 菜单分配弹窗样式
-    :deep(.menu-assignment-modal) {
-        .user-input {
-            margin-bottom: 16px;
-        }
-        
-        .menus-container {
-            max-height: 400px;
-            overflow-y: auto;
-            padding-right: 8px;
-            border: 1px solid #e8e8e8;
-            border-radius: 4px;
-            padding: 12px;
-            
-            &::-webkit-scrollbar {
-                width: 6px;
-                background-color: #f5f5f5;
-            }
-            
-            &::-webkit-scrollbar-thumb {
-                background-color: #ccc;
-                border-radius: 3px;
-            }
+        &::-webkit-scrollbar-track {
+            background-color: #f5f5f5;
         }
         
         .menu-tree {
-            .menu-node {
-                display: flex;
-                align-items: center;
-                flex-wrap: wrap;
-                
-                .menu-name {
-                    font-weight: 500;
-                    margin-right: 8px;
-                }
-                
-                .menu-path {
-                    font-size: 12px;
-                    color: #8c8c8c;
-                    margin-right: 8px;
-                }
+            .menu-name {
+                font-weight: 500;
+                margin-right: 8px;
+            }
+            
+            .menu-path {
+                color: #8c8c8c;
+                font-size: 12px;
             }
         }
     }
 }
+
 
 // 响应式处理
 @media (max-width: 768px) {
@@ -986,4 +1166,6 @@ onMounted(() => {
             }
         }
     }
-}</style>
+}
+
+</style>
