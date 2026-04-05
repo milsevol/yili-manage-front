@@ -5,6 +5,9 @@
 		},
 		{
 			"path": "../../../../yili-manage"
+		},
+		{
+			"path": "../../../../yili-ai-tools"
 		}
 	],
 	"settings": {}
