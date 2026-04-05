@@ -9,6 +9,8 @@ import Dashboard from '@/views/Dashboard.vue';
 import UserManagement from '@/views/system/UserManagement.vue';
 import RoleManagement from '@/views/system/RoleManagement.vue';
 import MenuManagement from '@/views/system/MenuManagement.vue';
+import BlogCategoryManagement from '@/views/blog/BlogCategoryManagement.vue';
+import BlogArticleManagement from '@/views/blog/BlogArticleManagement.vue';
 
 const routes = [
     {
@@ -45,6 +47,16 @@ const routes = [
                         path: 'menus',
                         component: MenuManagement,
                         meta: { title: '菜单管理' },
+                    },
+                    {
+                        path: 'blogCategory',
+                        component: BlogCategoryManagement,
+                        meta: { title: '博客栏目' },
+                    },
+                    {
+                        path: 'blogArticle',
+                        component: BlogArticleManagement,
+                        meta: { title: '博客文章' },
                     },
                     // 捕获 system 路径下的未匹配子路由
                     {
