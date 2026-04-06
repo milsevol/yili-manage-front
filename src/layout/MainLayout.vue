@@ -221,7 +221,7 @@ const findMenuTrailByPath = (menus, targetPath, parentTrail = []) => {
 
 // 面包屑导航
 const breadcrumbItems = computed(() => {
-    const items = [{ title: '首页', path: '/dashboard' }];
+    const items = [{ title: '数据看板', path: '/dashboard' }];
     
     if (route.path !== '/dashboard') {
         const currentTrail = findMenuTrailByPath(userMenus.value, route.path)
@@ -295,7 +295,7 @@ const fetchCurrentUser = async () => {
             userMenus.value = [
                 {
                     menuId: 'dashboard',
-                    menuName: '首页',
+                    menuName: '数据看板',
                     menuUrl: 'dashboard',
                     menuIcon: 'DashboardOutlined'
                 }
@@ -307,7 +307,7 @@ const fetchCurrentUser = async () => {
         userMenus.value = [
             {
                 menuId: 'dashboard',
-                menuName: '首页',
+                menuName: '数据看板',
                 menuUrl: 'dashboard',
                 menuIcon: 'DashboardOutlined'
             }

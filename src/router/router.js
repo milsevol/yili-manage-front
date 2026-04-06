@@ -4,7 +4,7 @@ import About from '@/pages/about/About.vue';
 import MenuNotFound from '@/pages/404/MenuNotFound.vue';
 import Login from '@/pages/login/Login.vue';
 import MainLayout from '@/layout/MainLayout.vue';
-import Dashboard from '@/views/Dashboard.vue';
+import DataScreen from '@/views/dashboard/DataScreen.vue';
 import UserManagement from '@/views/system/UserManagement.vue';
 import RoleManagement from '@/views/system/RoleManagement.vue';
 import MenuManagement from '@/views/system/MenuManagement.vue';
@@ -25,8 +25,8 @@ const routes = [
         children: [
             {
                 path: 'dashboard',
-                component: Dashboard,
-                meta: { title: '首页' },
+                component: DataScreen,
+                meta: { title: '数据看板' },
             },
             {
                 path: 'system',
