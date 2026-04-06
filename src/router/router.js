@@ -1,7 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router';
 import Home from '@/pages/home/Home.vue';
 import About from '@/pages/about/About.vue';
-import NotFound from '@/pages/404/Error404.vue';
 import MenuNotFound from '@/pages/404/MenuNotFound.vue';
 import Login from '@/pages/login/Login.vue';
 import MainLayout from '@/layout/MainLayout.vue';
@@ -50,6 +49,25 @@ const routes = [
                     },
                     {
                         path: 'blogCategory',
+                        redirect: '/blog/blogCategory',
+                    },
+                    {
+                        path: 'blogArticle',
+                        redirect: '/blog/blogArticle',
+                    },
+                    {
+                        path: ':pathMatch(.*)*',
+                        component: MenuNotFound,
+                        meta: { title: '页面未找到' },
+                    },
+                ],
+            },
+            {
+                path: 'blog',
+                meta: { title: '博客管理' },
+                children: [
+                    {
+                        path: 'blogCategory',
                         component: BlogCategoryManagement,
                         meta: { title: '博客栏目' },
                     },
@@ -95,7 +113,7 @@ const router = createRouter({
 });
 
 // 路由全局前置守卫
-router.beforeEach((to, from, next) => {
+router.beforeEach((to, _from, next) => {
     // 设置页面标题
     if (to.meta.title) {
         document.title = `${to.meta.title} - 管理后台`;

@@ -101,7 +101,7 @@ const route = useRoute();
 
 const collapsed = ref(false);
 const selectedKeys = ref([]);
-const openKeys = ref(['system']);
+const openKeys = ref([]);
 const currentUser = reactive({ username: '' });
 const userMenus = ref([]);
 
@@ -121,6 +121,34 @@ const getMenuIcon = (iconName) => {
     return IconComponent ? h(IconComponent) : h(SettingOutlined);
 };
 
+const getMenuKey = (menu) => menu.menuUrl || menu.menuId;
+
+const normalizeMenuSegment = (segment) => (segment || '').replace(/^\/+|\/+$/g, '');
+
+const joinMenuPath = (segments) => {
+    const cleanSegments = segments
+        .map(normalizeMenuSegment)
+        .filter(Boolean);
+
+    if (cleanSegments.length === 0) {
+        return '/';
+    }
+
+    return `/${cleanSegments.join('/')}`;
+};
+
+const buildPathFromTrail = (trail) => {
+    if (!trail || trail.length === 0) {
+        return '';
+    }
+
+    if (trail.length === 1 && trail[0].menuUrl === 'dashboard') {
+        return '/dashboard';
+    }
+
+    return joinMenuPath(trail.map(item => item.menuUrl || item.menuId));
+};
+
 // 转换菜单数据格式
 const transformMenuData = (menus) => {
     return menus.map(menu => {
@@ -130,7 +158,7 @@ const transformMenuData = (menus) => {
         }
         
         const item = {
-            key: menu.menuUrl || menu.menuId,
+            key: getMenuKey(menu),
             icon: getMenuIcon(menu.menuIcon),
             label: menu.menuName,
             title: menu.menuName
@@ -153,100 +181,72 @@ const menuItems = computed(() => {
     return transformMenuData(userMenus.value);
 });
 
+const findMenuTrailByKey = (menus, key, parentTrail = []) => {
+    for (const menu of menus) {
+        const currentTrail = [...parentTrail, menu];
+        if (getMenuKey(menu) === key) {
+            return currentTrail;
+        }
+        if (menu.children && menu.children.length > 0) {
+            const found = findMenuTrailByKey(menu.children, key, currentTrail);
+            if (found) {
+                return found;
+            }
+        }
+    }
+    return null;
+};
+
+const findMenuTrailByPath = (menus, targetPath, parentTrail = []) => {
+    for (const menu of menus) {
+        if (menu.menuType !== 'MENU') {
+            continue;
+        }
+
+        const currentTrail = [...parentTrail, menu];
+        if (buildPathFromTrail(currentTrail) === targetPath) {
+            return currentTrail;
+        }
+
+        if (menu.children && menu.children.length > 0) {
+            const found = findMenuTrailByPath(menu.children, targetPath, currentTrail);
+            if (found) {
+                return found;
+            }
+        }
+    }
+
+    return null;
+};
+
 // 面包屑导航
 const breadcrumbItems = computed(() => {
     const items = [{ title: '首页', path: '/dashboard' }];
     
     if (route.path !== '/dashboard') {
-        const currentMenu = findMenuByKey(selectedKeys.value[0]);
-        if (currentMenu) {
-            // 如果是子菜单，添加父菜单
-            const parentMenu = findParentMenu(selectedKeys.value[0]);
-            if (parentMenu) {
-                items.push({ title: parentMenu.title, path: parentMenu.key });
-            }
-            items.push({ title: currentMenu.title, path: currentMenu.key });
+        const currentTrail = findMenuTrailByPath(userMenus.value, route.path)
+            || findMenuTrailByKey(userMenus.value, selectedKeys.value[0]);
+        if (currentTrail) {
+            currentTrail.forEach((menu, index) => {
+                items.push({
+                    title: menu.menuName,
+                    path: buildPathFromTrail(currentTrail.slice(0, index + 1))
+                });
+            });
         }
     }
     
     return items;
 });
 
-// 查找菜单项
-const findMenuByKey = (key) => {
-    for (const item of userMenus.value) {
-        if (item.key === key) return item;
-        if (item.children) {
-            for (const child of item.children) {
-                if (child.key === key) return child;
-            }
-        }
-    }
-    return null;
-};
-
-// 查找父菜单
-const findParentMenu = (key) => {
-    for (const item of userMenus.value) {
-        if (item.children) {
-            for (const child of item.children) {
-                if (child.key === key) return item;
-            }
-        }
-    }
-    return null;
-};
-
-// 在原始菜单数据中查找菜单项
-const findRawMenuByKey = (menus, key) => {
-    for (const menu of menus) {
-        if ((menu.menuUrl || menu.menuId) === key) {
-            return menu;
-        }
-        if (menu.children && menu.children.length > 0) {
-            const found = findRawMenuByKey(menu.children, key);
-            if (found) return found;
-        }
-    }
-    return null;
-};
-
-// 在原始菜单数据中查找父菜单
-const findRawParentMenu = (menus, key) => {
-    for (const menu of menus) {
-        if (menu.children && menu.children.length > 0) {
-            for (const child of menu.children) {
-                if ((child.menuUrl || child.menuId) === key) {
-                    return menu;
-                }
-            }
-            // 递归查找更深层的父菜单
-            const found = findRawParentMenu(menu.children, key);
-            if (found) return found;
-        }
-    }
-    return null;
-};
-
 // 构建完整的菜单路径（包含父菜单路径）
 const buildMenuPath = (key) => {
-    const menuItem = findRawMenuByKey(userMenus.value, key);
-    if (!menuItem) return key.startsWith('/') ? key : `/${key}`;
-    
-    // 查找父菜单
-    const parentMenu = findRawParentMenu(userMenus.value, key);
-    if (parentMenu && parentMenu.menuUrl) {
-        // 如果有父菜单，拼接父菜单路径
-        const parentPath = parentMenu.menuUrl.startsWith('/') ? parentMenu.menuUrl : `/${parentMenu.menuUrl}`;
-        const childPath = menuItem.menuUrl || key;
-        const childPathClean = childPath.startsWith('/') ? childPath.substring(1) : childPath;
-        return `${parentPath}/${childPathClean}`;
-    } else {
-        // 如果没有父菜单，直接使用菜单项的路径
-        return menuItem.menuUrl ? 
-            (menuItem.menuUrl.startsWith('/') ? menuItem.menuUrl : `/${menuItem.menuUrl}`) : 
-            (key.startsWith('/') ? key : `/${key}`);
+    const menuTrail = findMenuTrailByKey(userMenus.value, key);
+    if (menuTrail) {
+        return buildPathFromTrail(menuTrail);
     }
+
+    return key.startsWith('/') ? key : `/${key}`;
 };
 
 // 菜单点击处理
@@ -317,32 +317,16 @@ const fetchCurrentUser = async () => {
 
 // 根据当前路由设置选中的菜单
 const setSelectedMenuByRoute = () => {
-    const path = route.path;
-    
-    // 递归查找匹配的菜单项
-    const findMenuByPath = (menus, targetPath) => {
-        for (const menu of menus) {
-            if (menu.menuType === 'MENU') {
-                const menuPath = menu.menuUrl === 'dashboard' ? '/dashboard' : `/system/${menu.menuUrl}`;
-                if (menuPath === targetPath) {
-                    return menu.menuUrl;
-                }
-                if (menu.children) {
-                    const found = findMenuByPath(menu.children, targetPath);
-                    if (found) {
-                        // 如果在子菜单中找到，确保父菜单展开
-                        openKeys.value = [menu.menuUrl];
-                        return found;
-                    }
-                }
-            }
-        }
-        return null;
-    };
-    
-    const menuKey = findMenuByPath(userMenus.value, path);
-    if (menuKey) {
-        selectedKeys.value = [menuKey];
+    const menuTrail = findMenuTrailByPath(userMenus.value, route.path);
+
+    if (menuTrail && menuTrail.length > 0) {
+        selectedKeys.value = [getMenuKey(menuTrail[menuTrail.length - 1])];
+        openKeys.value = menuTrail
+            .slice(0, -1)
+            .map(item => getMenuKey(item));
+    } else {
+        selectedKeys.value = [];
+        openKeys.value = [];
     }
 };
 
